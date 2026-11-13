@@ -263,9 +263,9 @@ node test/smoke.mjs
 
 测试覆盖：模块加载、`apply` 注册、档位解析、几何换算、粒子位移场与越界曲线、吸附曲线、CSS 规则断言，共 113 项。
 
-## 已知冲突
+## 兼容性
 
-本插件与 [`dsh-codex-effort-slider`](https://github.com/Microqian2th/dsh-codex-effort-slider) **都在接管官方「推理等级」那一行**，同时启用会互相覆盖，只保留一个。
+同一个「推理等级」行只能有一个接管者。本插件会替换该行的内容，请勿与其他同类滑轨插件同时启用，否则两者会互相覆盖。
 
 ## 许可
 
