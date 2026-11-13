@@ -127,11 +127,14 @@ dsh plugin --profile web add "github:xiaobaga281/dsh-effort-mosaic"
 
 ### B. 桌面端（DSH Desktop）
 
-设置 → 插件 → 添加插件 → 选本目录（或粘贴包名 / 仓库地址）：
+设置 → 插件 → 添加插件 → 粘贴仓库地址，或选本地目录：
 
 ```
+https://github.com/xiaobaga281/dsh-effort-mosaic
 <你的路径>\dsh-effort-mosaic
 ```
+
+**不要只填 `dsh-effort-mosaic`**：这个包没有发布到 npm，单填包名会去 npm registry 找，结果是 404。要填完整仓库地址，或指向解压后含 `package.json` 的那一层目录。
 
 桌面端的 profile 由应用自己管理，命令行安装可能被拒绝。确实要用命令行时，先**完全退出**应用（从托盘退出，不是只关窗口）再执行 `dsh plugin --profile desktop add ...`。
 
