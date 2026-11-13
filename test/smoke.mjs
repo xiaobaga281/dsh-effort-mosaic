@@ -378,6 +378,13 @@ ok("四套动画在极端输入下都不返回 NaN", (function () {
 /* 次高 → 最高档的衔接：全局进度 0→1 时，越靠左起势越晚（一道从滑块推出去的波） */
 ok("过渡起点：进度 0 时整片都不飞", I.scatterLocal(0, 0) === 0 && I.scatterLocal(0, 1) === 0);
 ok("过渡终点：进度 1 时整片都到位", I.scatterLocal(1, 0) === 1 && I.scatterLocal(1, 1) === 1);
+/* 线性夹取在起点/终点各有一个斜率折点，位移看起来像"卡"一下才开始。smoothstep 两端导数为 0。 */
+ok("错峰曲线两端导数为 0（起势与落位都是渐入渐出）", (function () {
+  const e = 1e-4;
+  const head = I.scatterLocal(e, 0) / e;
+  const tail = (1 - I.scatterLocal(1 - e, 0)) / e;
+  return head < 0.05 && tail < 0.05;
+})());
 ok("过渡中途：靠滑块的一侧先动（波从右往左推）",
   I.scatterLocal(0.5, 0) > I.scatterLocal(0.5, 0.5)
   && I.scatterLocal(0.5, 0.5) > I.scatterLocal(0.5, 1),
@@ -393,8 +400,11 @@ ok("单格进度随全局进度单调不减", (function () {
 })());
 ok("粒子层允许溢出轨道上下边界", I.CSS.indexOf(".dem-mosaic{") !== -1
   && /\.dem-mosaic\{[^}]*overflow:visible/.test(I.CSS));
-ok("粒子层外面套了一层按轨道圆角裁的壳", /\.dem-mosaic-clip\{[^}]*border-radius:999px[^}]*overflow:hidden/.test(I.CSS));
-ok("越界模式把圆角壳放开", /\.dem-track\[data-scatter='1'\] \.dem-mosaic-clip\{[^}]*overflow:visible/.test(I.CSS));
+ok("粒子层可以上下溢出，裁切层不再用 overflow:hidden", /\.dem-mosaic-clip\{[^}]*overflow:visible/.test(I.CSS));
+/* 左端帽必须单独裁：越界模式下不再靠 border-radius 收圆，缺了这层方块会从端帽探出去。 */
+ok("左端帽挂了圆盘遮罩（越界时也不会从端帽探出）",
+  /\.dem-mosaic\{[^}]*radial-gradient\(circle at calc\(var\(--dem-fill-h/.test(I.CSS));
+ok("进/退越界不再切 overflow 状态（避免衔接处硬切）", !/data-scatter='1'\]/.test(I.CSS));
 /* 收口必须跟着滑块走：写死「轨道高/2」时，滑块调到 28px 就会有一圈填充露在滑块外面。 */
 ok("环是 3px 壁、其余是 1px 描边", I.knobBorderWidthOf({ knobShape: "ring" }) === 3
   && I.knobBorderWidthOf({ knobShape: "circle" }) === 1
