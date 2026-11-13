@@ -1,0 +1,5 @@
+node_modules/
+.workbuddy/
+*.bak
+*.bak-*
+debug.log
