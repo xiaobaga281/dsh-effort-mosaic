@@ -1,24 +1,103 @@
 # dsh-effort-mosaic
 
-DeepSeek Harness（DSH）插件。接管模型菜单里的「推理等级」那一行，换成一条**像素马赛克粒子滑轨**。
+<p align="center">
+  <img src="https://raw.githubusercontent.com/xiaobaga281/dsh-effort-mosaic/main/docs/hero.png" alt="dsh-effort-mosaic：一条像素马赛克粒子滑轨，从右侧静止墙逐渐散开成越界飞沫" width="100%">
+</p>
 
-- **右侧**紧贴滑块的是一段严丝合缝、完全静止的马赛克墙
-- **越往左**，方块越早脱离网格：向左漂移、上下散开、逐渐淡出；可以飞出轨道上下边界，但不会越过轨道左边界
-- **档位越高**方块跑得越快；到最高档触发一次点亮，能量光从滑块向左铺开
-- **档位表不写死**，完全跟随当前模型在 `reasoning.efforts` 里声明的档位；模型没声明就不接管这一行（fail-open）
-- 最高档时，输入框胶囊里的档位名（`DeepSeek-V4.1-Flash Max` 里的 `Max`）染成品牌蓝
+<p align="center">
+  <a href="https://github.com/xiaobaga281/dsh-effort-mosaic/releases/latest"><img src="https://img.shields.io/github/v/release/xiaobaga281/dsh-effort-mosaic?color=4a84ff&label=release" alt="release"></a>
+  <a href="https://github.com/xiaobaga281/dsh-effort-mosaic/blob/main/LICENSE"><img src="https://img.shields.io/github/license/xiaobaga281/dsh-effort-mosaic?color=4a84ff" alt="license"></a>
+  <img src="https://img.shields.io/badge/platform-DSH%20Desktop-4a84ff" alt="platform">
+  <img src="https://img.shields.io/badge/dependencies-0-4a84ff" alt="zero dependencies">
+</p>
 
-所有视觉参数都能在插件详情页里改，见 [自定义版式](#自定义版式)。
+<p align="center">接管模型菜单里的「推理等级」那一行，换成一条<b>像素马赛克粒子滑轨</b>。</p>
+
+**右侧**贴着滑块的那一段是严丝合缝、完全静止的马赛克墙；**越往左**方块越早脱离网格 —— 向左漂移、上下散开、逐渐淡出；**档位越高**方块跑得越快；到**最高档**点亮一次，能量光从滑块向左铺开。
+
+| | 它解决什么 |
+|---|---|
+| **看得见强度** | 一条连续轨道比四个字（Off / Low / High / Max）直观：右端是墙、左端是散沙，强度本身就是纹理 |
+| **手感是连续的** | 拖动跟手不跳档；松手按临界阻尼曲线收口，初速接住指尖的势头；点击只判最近档位，不先跳到指针再退回来 |
+| **最高档有代价感** | 只有开满时才让粒子飞出轨道（默认），四套动画：飞沫 / 飘散 / 坠落 / 潮汐 |
+| **可调到底** | 5 种滑块 × 3 档尺寸 × 4 种填充，强调色与越界幅度都能改，全部在插件详情页里 |
+
+档位表不写死：完全跟随当前模型在 `reasoning.efforts` 里声明的档位；模型没声明就不接管这一行（fail-open）。最高档时，输入框胶囊里的档位名（`DeepSeek-V4.1-Flash Max` 里的 `Max`）会染成品牌蓝。
+
+## 安装
+
+本插件是标准 DSH bundle 包：`package.json` 声明 `dsh.bundle.patch`，根目录放 `cordis.patch.yml`，没有构建步骤。所以官方那条命令就能装完并自动接线，不需要手改配置。
+
+### A. 命令行（dsh web / 自建 host）
+
+```sh
+dsh plugin --profile web add https://github.com/xiaobaga281/dsh-effort-mosaic/releases/latest/download/dsh-effort-mosaic.tgz
+```
+
+也可以直接从源码装（仓库没有构建步骤）：
+
+```sh
+dsh plugin --profile web add "github:xiaobaga281/dsh-effort-mosaic"
+```
+
+装完重启 `dsh web`，`dsh plugin --profile web list` 可以确认它已进入 profile。把 `web` 换成你实际的 profile 名即可。
+
+### B. 桌面端（DSH Desktop）
+
+设置 → 插件 → 添加插件 → 粘贴仓库地址，或选本地目录：
+
+```
+https://github.com/xiaobaga281/dsh-effort-mosaic
+<你的路径>\dsh-effort-mosaic
+```
+
+**不要只填 `dsh-effort-mosaic`**：这个包没有发布到 npm，单填包名会去 npm registry 找，结果是 404。要填完整仓库地址，或指向解压后含 `package.json` 的那一层目录。
+
+桌面端的 profile 由应用自己管理，命令行安装可能被拒绝。确实要用命令行时，先**完全退出**应用（从托盘退出，不是只关窗口）再执行 `dsh plugin --profile desktop add ...`。
+
+### C. 手工接线（备用）
+
+两条官方路径都不可用时才用，desktop profile 在 `%USERPROFILE%\.dsh\profiles\desktop`。
+
+1. 备份 `profiles\desktop\package.json`。
+2. `dependencies` 里加一行（路径换成实际位置，正斜杠）：
+
+   ```json
+   "dsh-effort-mosaic": "link:D:/path/to/dsh-effort-mosaic"
+   ```
+
+3. 同文件 `dsh.profile.bundles` 数组末尾追加 `"dsh-effort-mosaic"`。
+4. 在 `node_modules` 下建目录联结（不是复制，改源码要能立刻反映）：
+
+   ```powershell
+   cmd /c mklink /J "%USERPROFILE%\.dsh\profiles\desktop\node_modules\dsh-effort-mosaic" "D:\path\to\dsh-effort-mosaic"
+   ```
+
+5. **完全退出并重新打开** DSH Desktop。改过 `lib/client.js` 必须整进程重启才生效，只关窗口不行。
+
+### 卸载
+
+```sh
+dsh plugin --profile web remove dsh-effort-mosaic
+```
+
+- **桌面端**：在插件页里卸载
+- **手工接线**：用 `rmdir` 删掉那个目录联结（**不要**用递归删除，它会顺着链接把插件本体一起删掉），再从 `dependencies` 与 `dsh.profile.bundles` 里删掉对应两行
+
+### 要求
+
+- DSH Desktop `0.2.1-rc.3` 及以上（其他版本未验证）
+- Node `>= 22`（只用于跑测试；插件零运行时依赖、无构建步骤）
 
 ## 交互
 
 | 操作 | 行为 |
 |---|---|
-| 按住拖动 | 连续跟手，不逐档跳动 |
+| 按住拖动 | 连续跟手，不逐档跳动（横向超过 5px 才算拖动） |
 | 松手 | 吸附到最近档位（带初速的临界阻尼曲线，约 0.25s） |
 | `←` `→` `↑` `↓` | 相邻档位，同样走吸附动画 |
 | `Home` / `End` | 最低 / 最高档 |
-| 点击轨道 | 先跳到点击位置，再吸附 |
+| 点击轨道 | 判定离指针最近的档位，从滑块当前位置柔和滑过去（约 0.3s，不经过指针位置） |
 
 拖动过程只改本地显示位置；**松手那一下才写回**官方设置。写回有 120ms 节流，所以界面先用乐观档位显示，等后端回读再对齐（写回失败回滚时也会自动复位）。
 
@@ -40,6 +119,10 @@ DeepSeek Harness（DSH）插件。接管模型菜单里的「推理等级」那�
 - 遮罩圆心由 rAF 每帧按滑块**真实渲染位置**写入，半径按 `min(滑块宽, 滑块高)/2 − 描边` 算（环 3px 壁、其余 1px）。
 
 滑块有五种形状（圆 / 环 / 方 / 胶囊 / 细棒，宽度分别为 1× / 1× / 1× / 1.6× / 0.42× 直径）和三档尺寸（28 / 30 / 34px）。**行程、刻度位置、拖动映射全部按滑块实际宽度算**，所以非圆形滑块两端也刚好贴着轨道端点。
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/xiaobaga281/dsh-effort-mosaic/main/docs/shapes.png" alt="五种滑块：圆 / 环 / 方形 / 胶囊 / 细棒" width="100%">
+</p>
 
 ### 粒子场
 
@@ -77,18 +160,27 @@ speed  = (0.0022 + lv * 0.040) * (1 + burstPower * 1.6 * 点亮强度)
 
 进/退最高档不是硬切：整体强度按**指数逼近**走向目标（进 τ = 0.24s、退 τ = 0.17s），再按离滑块的远近**错峰 0.34** 并套一层 smoothstep，形成一道从滑块向左推的波 —— 切档第一帧近滑块那侧就开始动，约 0.9s 铺满，尾段慢慢落定。
 
-### 吸附
+### 吸附与点击落档
 
-松手后位置由 rAF 逐帧按**临界阻尼闭式解**计算，不是 CSS 过渡：
+位置由 rAF 逐帧按**临界阻尼闭式解**计算，不是 CSS 过渡：
 
 ```
-x(t) = to + (A + B·t)·e^(−ωt)     A = from − to，B = v0 + ωA，ω = 22
+x(t) = to + (A + B·t)·e^(−ωt)     A = from − to，B = v0 + ωA
 ```
 
-- 初速 `v0` 取松手前最后一段指针速度（间隔 >140ms 就当 0），所以「慢慢挪到两档之间松手」和「甩到档位附近松手」都是顺的延长线，不会在起点顿一下
-- `v0` 夹在 `ω|A|` 以内：超过这个值临界阻尼也会冲过档位再荡回来，那是弹跳不是吸附
-- 约 0.25s 落位（ω = 22），最长 0.42s 截止；到位后 `popKnob()` 用 WAAPI 播一次 `scale 1 → 1.014 → 1`（260ms）做接触反馈
+同一条曲线服务两种操作，只有 `ω` 和初速不同：
+
+| 操作 | ω | 初速 | 说明 |
+|---|---|---|---|
+| 拖动松手 | 22 | 松手前最后一段指针速度 | 约 0.25s 落位；「慢慢挪到两档之间松手」和「甩到档位附近松手」都是顺的延长线 |
+| 点击轨道 | 18 | 固定 0 | 约 0.30s 走完九成、0.1s 收尾；离散操作没有势头可接，起手必须静止，落得更柔 |
+
+- **点击不经过指针位置。** 按下时滑块一像素都不动，抬起时先算出离指针最近的档位，再从滑块**当前所在位置**滑过去。上一版是「按下先跳到指针、再吸附回档位」，那一段来回位移就是回弹感的来源
+- 点击与拖动用 `TAP_SLOP = 5px` 的横向阈值区分：抬起前没超过它算点击，超过则从那一刻起跟手
+- 初速 `v0` 夹在 `ω|A|` 以内：超过这个值临界阻尼也会冲过档位再荡回来，那是弹跳不是吸附
+- 落位后 `popKnob()` 用 WAAPI 播一次 `scale 1 → 1.014 → 1`（260ms）做接触反馈；点在当前档位区域内（目标 == 当前位置）没有位移，也会播这一下，避免「点了没反应」
 - 吸附期间 `data-snapping` 关掉滑块和填充的 CSS 过渡；非吸附期两者都是 `.3s` 的同一条曲线（只服务外部写回档位）
+- 吸附途中被按住时只停 rAF、**不清** `settlePct`：滑块冻结在当前视觉位置，下一次滑动从这里接着走，不会当场跳回目标档
 
 ### 最高档点亮
 
@@ -106,72 +198,6 @@ x(t) = to + (A + B·t)·e^(−ωt)     A = from − to，B = v0 + ωA，ω = 22
 ### 冷启动
 
 菜单/详情页第一次挂载时：强度从 **0.25** 起势再缓到 1 —— 贴着滑块那几格先散开、最左侧还压在网格上，于是开场是一道向左推开的波，而不是一张静态的半散图；相位随机，不会每次都从同一帧开始。量尺寸、建墙都在 `useLayoutEffect` 里完成，并在建完格子后**同步跑一帧**，paint 出来的第一帧就是最终画面。
-
-## 安装
-
-本插件是标准 DSH bundle 包：`package.json` 声明 `dsh.bundle.patch`，根目录放 `cordis.patch.yml`，没有构建步骤。所以官方那条命令就能装完并自动接线，不需要手改配置。
-
-### A. 命令行（dsh web / 自建 host）
-
-```sh
-dsh plugin --profile web add https://github.com/xiaobaga281/dsh-effort-mosaic/releases/latest/download/dsh-effort-mosaic.tgz
-```
-
-也可以直接从源码装（仓库没有构建步骤）：
-
-```sh
-dsh plugin --profile web add "github:xiaobaga281/dsh-effort-mosaic"
-```
-
-装完重启 `dsh web`，`dsh plugin --profile web list` 可以确认它已进入 profile。把 `web` 换成你实际的 profile 名即可。
-
-### B. 桌面端（DSH Desktop）
-
-设置 → 插件 → 添加插件 → 粘贴仓库地址，或选本地目录：
-
-```
-https://github.com/xiaobaga281/dsh-effort-mosaic
-<你的路径>\dsh-effort-mosaic
-```
-
-**不要只填 `dsh-effort-mosaic`**：这个包没有发布到 npm，单填包名会去 npm registry 找，结果是 404。要填完整仓库地址，或指向解压后含 `package.json` 的那一层目录。
-
-桌面端的 profile 由应用自己管理，命令行安装可能被拒绝。确实要用命令行时，先**完全退出**应用（从托盘退出，不是只关窗口）再执行 `dsh plugin --profile desktop add ...`。
-
-### 卸载
-
-```sh
-dsh plugin --profile web remove dsh-effort-mosaic
-```
-
-桌面端在插件页里卸载。手工接线装的见下一节。
-
-### C. 手工接线（备用）
-
-两条官方路径都不可用时才用，desktop profile 在 `%USERPROFILE%\.dsh\profiles\desktop`。
-
-1. 备份 `profiles\desktop\package.json`。
-2. `dependencies` 里加一行（路径换成实际位置，正斜杠）：
-
-   ```json
-   "dsh-effort-mosaic": "link:D:/path/to/dsh-effort-mosaic"
-   ```
-
-3. 同文件 `dsh.profile.bundles` 数组末尾追加 `"dsh-effort-mosaic"`。
-4. 在 `node_modules` 下建目录联结（不是复制，改源码要能立刻反映）：
-
-   ```powershell
-   cmd /c mklink /J "%USERPROFILE%\.dsh\profiles\desktop\node_modules\dsh-effort-mosaic" "D:\path\to\dsh-effort-mosaic"
-   ```
-
-5. **完全退出并重新打开** DSH Desktop。改过 `lib/client.js` 必须整进程重启才生效，只关窗口不行。
-
-这样装的卸载方式：用 `cmd /c rmdir` 删联结（**不要** `Remove-Item -Recurse`，会顺着链接把插件本体删掉），再从 `dependencies` 与 `dsh.profile.bundles` 里删掉对应两行。
-
-### 要求
-
-- DSH Desktop `0.2.1-rc.3` 及以上（其他版本未验证）
-- Node `>= 22`（只用于跑测试；插件零运行时依赖、无构建步骤）
 
 ## 自定义版式
 
@@ -275,13 +301,14 @@ lib/index.js       宿主半边：零逻辑，只做客户端产物静态审计
 lib/client.js      客户端半边：全部实现（CJS closure bundle，无构建步骤）
 test/smoke.mjs     离线冒烟测试（桩件里真执行 bundle），不参与 npm 发布
 LICENSE            MIT
+docs/*.png         README 宣传图（由真实 CSS + 真实几何渲染）
 ```
 
 ```powershell
 node test/smoke.mjs
 ```
 
-测试覆盖：模块加载、`apply` 注册、档位解析、几何换算、粒子位移场与越界曲线、吸附曲线、CSS 规则断言，共 113 项。
+测试覆盖：模块加载、`apply` 注册、档位解析、几何换算、粒子位移场与越界曲线、吸附曲线、点击落档曲线、指针事件结构断言、CSS 规则断言，共 125 项。
 
 ## 兼容性
 

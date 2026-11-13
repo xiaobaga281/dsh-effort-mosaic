@@ -7,9 +7,11 @@
 import { pathToFileURL } from "node:url";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import fs from "node:fs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const CLIENT = resolve(HERE, "../lib/client.js");
+const SRC = fs.readFileSync(CLIENT, "utf8");
 
 let pass = 0;
 const fails = [];
@@ -532,6 +534,48 @@ ok("接近终点时速度已经收住（不是硬刹）", (function () {
 ok("吸附不再依赖 CSS 动画（改由 rAF 逐帧驱动）", !/demKnobPop/.test(I.CSS));
 ok("填充与滑块共用同一条过渡时长", /\.dem-fill\{[^}]*transition:width \.3s/.test(I.CSS)
   && /\.dem-knob\{[^}]*transition:left \.3s/.test(I.CSS));
+
+/* ── 点击落档（方案 B）──
+   点击不再"先跳到指针再滑回来"：判最近档后，从滑块当前位置用一条更柔的
+   临界阻尼曲线滑过去（TAP_OMEGA），起手 0 速度、全程不过冲。 */
+ok("点击用的角频率比松手吸附更柔", I.TAP_OMEGA > 0 && I.TAP_OMEGA < I.SETTLE_OMEGA,
+  String(I.TAP_OMEGA));
+ok("点击/拖动的判定阈值是 5px", I.TAP_SLOP === 5, String(I.TAP_SLOP));
+ok("settleAt 接受自定义角频率", (function () {
+  const soft = I.settleAt(0.2, 0.667, 0, 0.12, I.TAP_OMEGA);
+  const firm = I.settleAt(0.2, 0.667, 0, 0.12, I.SETTLE_OMEGA);
+  /* 同一时刻，更柔的那条走得少一点（离起点更近） */
+  return Math.abs(soft - 0.2) < Math.abs(firm - 0.2);
+})());
+ok("点击曲线从当前位置起步（不经过指针）", Math.abs(I.settleAt(0.333, 0.667, 0, 0, I.TAP_OMEGA) - 0.333) < 1e-9);
+ok("点击曲线不过冲、单调靠近目标", (function () {
+  const from = 0.334;
+  const to = 0.667;
+  let prev = from;
+  for (let t = 0; t <= 0.46; t += 0.004) {
+    const x = I.settleAt(from, to, 0, t, I.TAP_OMEGA);
+    if (x < prev - 1e-9 || x > to + 1e-9) return false;
+    prev = x;
+  }
+  return true;
+})());
+ok("点击曲线 340ms 内走完九成五", (function () {
+  const x = I.settleAt(0.334, 0.667, 0, 0.34, I.TAP_OMEGA);
+  return (x - 0.334) / (0.667 - 0.334) > 0.95;
+})(), I.settleAt(0.334, 0.667, 0, 0.34, I.TAP_OMEGA).toFixed(4));
+ok("点击曲线起手速度为 0（不会先窜出去）", (function () {
+  const e = 1e-4;
+  const v = (I.settleAt(0.334, 0.667, 0, e, I.TAP_OMEGA) - 0.334) / e;
+  return v < 0.2;
+})());
+/* 结构断言：回弹感的来源是"按下就跳到指针处"，这段源码里不该再出现 setDragPct */
+ok("按下不移动滑块（先跳后回的来源已移除）", (function () {
+  const a = SRC.indexOf("function onPointerDown");
+  const b = SRC.indexOf("function onPointerMove");
+  return a > 0 && b > a && !/setDragPct/.test(SRC.slice(a, b));
+})());
+ok("点击落档以 TAP_OMEGA 起吸附", /beginSettle\(pctOfIndex\(tapTo[^)]*\),\s*0,\s*TAP_OMEGA\)/.test(SRC));
+ok("拖动松手仍接住指针初速", /beginSettle\(pctOfIndex\(target, now\.count\), speed\)/.test(SRC));
 
 /* ── 报告 ── */
 if (fails.length === 0) {
