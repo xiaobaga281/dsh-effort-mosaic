@@ -271,6 +271,7 @@ cordis.patch.yml   host 图里插入这一行（`- insert: - id: effort-mosaic`�
 lib/index.js       宿主半边：零逻辑，只做客户端产物静态审计
 lib/client.js      客户端半边：全部实现（CJS closure bundle，无构建步骤）
 test/smoke.mjs     离线冒烟测试（桩件里真执行 bundle），不参与 npm 发布
+LICENSE            MIT
 ```
 
 ```powershell
