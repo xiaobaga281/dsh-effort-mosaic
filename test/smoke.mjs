@@ -480,6 +480,49 @@ const menuOne = { querySelectorAll: () => [zhRow] };
 ok("按中文文案认出", I.findEffortRow(menuOne) === zhRow);
 ok("空菜单返回 null", I.findEffortRow(null) === null);
 
+/* ── 松手吸附曲线（settleAt）──
+   要求：起点等于松手位置、终点落在档位、朝目标的初速不会冲过头、
+   背离目标的初速会被"接住"再回来、接近终点时速度已经收住（不是硬刹）。 */
+ok("吸附曲线起点就是松手位置", Math.abs(I.settleAt(0.3, 0.333, 0, 0) - 0.3) < 1e-9);
+ok("吸附曲线落在目标档", Math.abs(I.settleAt(0.3, 0.333, 0, 0.42) - 0.333) < 1e-3);
+ok("已经在档位上就不动", [0, 0.1, 0.42].every(
+  (t) => Math.abs(I.settleAt(0.333, 0.333, 3, t) - 0.333) < 1e-9));
+ok("朝目标的初速不会冲过档位", (function () {
+  for (const v of [0, 0.2, 1, 6, 50]) {
+    let prev = 0.3;
+    for (let t = 0; t <= 0.5; t += 0.005) {
+      const x = I.settleAt(0.3, 0.333, v, t);
+      if (x < prev - 1e-9 || x > 0.333 + 1e-9) return false;
+      prev = x;
+    }
+  }
+  return true;
+})());
+ok("背离目标的初速会被接住再回到档位", (function () {
+  let min = 1;
+  for (let t = 0; t <= 0.5; t += 0.005) min = Math.min(min, I.settleAt(0.3, 0.333, -6, t));
+  return min > 0.28 && Math.abs(I.settleAt(0.3, 0.333, -6, 0.42) - 0.333) < 1e-3;
+})());
+ok("起步速度等于松手速度（起点不会顿一下）", (function () {
+  const e = 1e-4;
+  const v = (I.settleAt(0.3, 0.6, 2.5, e) - I.settleAt(0.3, 0.6, 2.5, 0)) / e;
+  return Math.abs(v - 2.5) < 0.2;
+})());
+ok("接近终点时速度已经收住（不是硬刹）", (function () {
+  const e = 1e-3;
+  let peak = 0;
+  for (let t = 0; t <= 0.5; t += 0.005) {
+    peak = Math.max(peak, Math.abs(
+      I.settleAt(0.3, 0.333, 0, t + e) - I.settleAt(0.3, 0.333, 0, t)) / e);
+  }
+  const vNear = Math.abs(
+    I.settleAt(0.3, 0.333, 0, 0.25 + e) - I.settleAt(0.3, 0.333, 0, 0.25)) / e;
+  return peak > 0.1 && vNear < peak * 0.25;
+})());
+ok("吸附不再依赖 CSS 动画（改由 rAF 逐帧驱动）", !/demKnobPop/.test(I.CSS));
+ok("填充与滑块共用同一条过渡时长", /\.dem-fill\{[^}]*transition:width \.3s/.test(I.CSS)
+  && /\.dem-knob\{[^}]*transition:left \.3s/.test(I.CSS));
+
 /* ── 报告 ── */
 if (fails.length === 0) {
   console.log(`OK  ${pass} 项全部通过`);
