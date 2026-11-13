@@ -109,19 +109,43 @@ x(t) = to + (A + B·t)·e^(−ωt)     A = from − to，B = v0 + ωA，ω = 22
 
 ## 安装
 
-DSH 的插件是一个 cordis 条目：包自己通过 `package.json` 的 `dsh.bundle.patch` 声明插入点，再由 profile 的 `dsh.profile.bundles` 列出。
+本插件是标准 DSH bundle 包：`package.json` 声明 `dsh.bundle.patch`，根目录放 `cordis.patch.yml`，没有构建步骤。所以官方那条命令就能装完并自动接线，不需要手改配置。
 
-### A. 桌面端插件面板（推荐）
+### A. 命令行（dsh web / 自建 host）
 
-DSH Desktop → 设置 → 插件 → 添加插件 → 选择本目录：
+```sh
+dsh plugin --profile web add https://github.com/xiaobaga281/dsh-effort-mosaic/releases/latest/download/dsh-effort-mosaic.tgz
+```
+
+也可以直接从源码装（仓库没有构建步骤）：
+
+```sh
+dsh plugin --profile web add "github:xiaobaga281/dsh-effort-mosaic"
+```
+
+装完重启 `dsh web`，`dsh plugin --profile web list` 可以确认它已进入 profile。把 `web` 换成你实际的 profile 名即可。
+
+### B. 桌面端（DSH Desktop）
+
+设置 → 插件 → 添加插件 → 选本目录（或粘贴包名 / 仓库地址）：
 
 ```
 <你的路径>\dsh-effort-mosaic
 ```
 
-### B. 手工装进 desktop profile
+桌面端的 profile 由应用自己管理，命令行安装可能被拒绝。确实要用命令行时，先**完全退出**应用（从托盘退出，不是只关窗口）再执行 `dsh plugin --profile desktop add ...`。
 
-desktop profile 在 `%USERPROFILE%\.dsh\profiles\desktop`。
+### 卸载
+
+```sh
+dsh plugin --profile web remove dsh-effort-mosaic
+```
+
+桌面端在插件页里卸载。手工接线装的见下一节。
+
+### C. 手工接线（备用）
+
+两条官方路径都不可用时才用，desktop profile 在 `%USERPROFILE%\.dsh\profiles\desktop`。
 
 1. 备份 `profiles\desktop\package.json`。
 2. `dependencies` 里加一行（路径换成实际位置，正斜杠）：
@@ -139,15 +163,7 @@ desktop profile 在 `%USERPROFILE%\.dsh\profiles\desktop`。
 
 5. **完全退出并重新打开** DSH Desktop。改过 `lib/client.js` 必须整进程重启才生效，只关窗口不行。
 
-### 卸载
-
-第 4 步建的是目录联结，**不要** `Remove-Item -Recurse`（会顺着链接把插件本体删掉）。用：
-
-```powershell
-cmd /c rmdir "%USERPROFILE%\.dsh\profiles\desktop\node_modules\dsh-effort-mosaic"
-```
-
-然后从 `dependencies` 与 `dsh.profile.bundles` 里删掉对应两行。
+这样装的卸载方式：用 `cmd /c rmdir` 删联结（**不要** `Remove-Item -Recurse`，会顺着链接把插件本体删掉），再从 `dependencies` 与 `dsh.profile.bundles` 里删掉对应两行。
 
 ### 要求
 
