@@ -31,27 +31,31 @@
 ### A. 命令行（dsh web / 自建 host）
 
 ```sh
-dsh plugin --profile web add https://github.com/xiaobaga281/dsh-effort-mosaic/releases/latest/download/dsh-effort-mosaic.tgz
+dsh plugin --profile web add dsh-effortmosaic
 ```
 
-也可以直接从源码装（仓库没有构建步骤）：
+也可以从 GitHub 装（仓库没有构建步骤，两个地址内容相同）：
 
 ```sh
 dsh plugin --profile web add "github:xiaobaga281/dsh-effort-mosaic"
+dsh plugin --profile web add https://github.com/xiaobaga281/dsh-effort-mosaic/releases/latest/download/dsh-effort-mosaic.tgz
 ```
+
+> **npm 包名是 `dsh-effortmosaic`（没有第二个连字符）**，仓库名是 `dsh-effort-mosaic`。npm 上那个带连字符的名字被一次误操作占用，24 小时后才会释放；两个名字指的是同一个插件，装一个就行。
 
 装完重启 `dsh web`，`dsh plugin --profile web list` 可以确认它已进入 profile。把 `web` 换成你实际的 profile 名即可。
 
 ### B. 桌面端（DSH Desktop）
 
-设置 → 插件 → 添加插件 → 粘贴仓库地址，或选本地目录：
+设置 → 插件 → 添加插件，三种都能填：
 
 ```
-https://github.com/xiaobaga281/dsh-effort-mosaic
-<你的路径>\dsh-effort-mosaic
+dsh-effortmosaic                                            # npm 包名
+https://github.com/xiaobaga281/dsh-effort-mosaic            # 仓库地址
+<你的路径>\dsh-effort-mosaic                                # 解压后含 package.json 的那一层
 ```
 
-**不要只填 `dsh-effort-mosaic`**：这个包没有发布到 npm，单填包名会去 npm registry 找，结果是 404。要填完整仓库地址，或指向解压后含 `package.json` 的那一层目录。
+注意别填成 `dsh-effort-mosaic`（带第二个连字符）—— registry 上那个名字暂时不可用，会 404。
 
 桌面端的 profile 由应用自己管理，命令行安装可能被拒绝。确实要用命令行时，先**完全退出**应用（从托盘退出，不是只关窗口）再执行 `dsh plugin --profile desktop add ...`。
 
