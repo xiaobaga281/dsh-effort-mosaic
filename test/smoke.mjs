@@ -568,6 +568,14 @@ ok("点击曲线起手速度为 0（不会先窜出去）", (function () {
   const v = (I.settleAt(0.334, 0.667, 0, e, I.TAP_OMEGA) - 0.334) / e;
   return v < 0.2;
 })());
+/* 收尾时间按 9.5/ω 算：到那一刻残余必须小于 0.1% 的行程，否则会"啪"地贴上档位 */
+ok("收尾时刻残余小于 0.1%（不会硬贴上去）", (function () {
+  const from = 0, to = 1;
+  return [I.TAP_OMEGA, I.SETTLE_OMEGA].every(function (w) {
+    const t = Math.min(0.62, 9.5 / w);
+    return Math.abs(I.settleAt(from, to, 0, t, w) - to) < 0.001;
+  });
+})());
 /* 结构断言：回弹感的来源是"按下就跳到指针处"，这段源码里不该再出现 setDragPct */
 ok("按下不移动滑块（先跳后回的来源已移除）", (function () {
   const a = SRC.indexOf("function onPointerDown");
