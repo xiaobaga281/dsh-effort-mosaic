@@ -302,14 +302,15 @@ lib/index.js       宿主半边：零逻辑，只做客户端产物静态审计
 lib/client.js      客户端半边：全部实现（CJS closure bundle，无构建步骤）
 test/smoke.mjs     离线冒烟测试（桩件里真执行 bundle），不参与 npm 发布
 LICENSE            MIT
-docs/*.png         README 宣传图（由真实 CSS + 真实几何渲染）
+docs/*.png         README 宣传图（用真实 CSS 渲染生成）
+tools/make-promo.mjs  重新生成上面两张图；不参与 npm 发布
 ```
 
 ```powershell
 node test/smoke.mjs
 ```
 
-测试覆盖：模块加载、`apply` 注册、档位解析、几何换算、粒子位移场与越界曲线、吸附曲线、点击落档曲线、指针事件结构断言、CSS 规则断言，共 125 项。
+测试覆盖：模块加载、`apply` 注册、档位解析、几何换算、粒子位移场与越界曲线、吸附曲线、点击落档曲线、指针事件结构断言、CSS 规则断言，共 126 项。
 
 ## 兼容性
 
