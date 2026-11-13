@@ -1,7 +1,7 @@
 # dsh-effort-mosaic
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/xiaobaga281/dsh-effort-mosaic/main/docs/hero.png" alt="dsh-effort-mosaic：一条像素马赛克粒子滑轨，从右侧静止墙逐渐散开成越界飞沫" width="100%">
+  <img src="https://cdn.jsdelivr.net/gh/xiaobaga281/dsh-effort-mosaic@main/docs/hero.png" alt="dsh-effort-mosaic：一条像素马赛克粒子滑轨，从右侧静止墙逐渐散开成越界飞沫" width="100%">
 </p>
 
 <p align="center">
@@ -121,7 +121,7 @@ dsh plugin --profile web remove dsh-effort-mosaic
 滑块有五种形状（圆 / 环 / 方 / 胶囊 / 细棒，宽度分别为 1× / 1× / 1× / 1.6× / 0.42× 直径）和三档尺寸（28 / 30 / 34px）。**行程、刻度位置、拖动映射全部按滑块实际宽度算**，所以非圆形滑块两端也刚好贴着轨道端点。
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/xiaobaga281/dsh-effort-mosaic/main/docs/shapes.png" alt="五种滑块：圆 / 环 / 方形 / 胶囊 / 细棒" width="100%">
+  <img src="https://cdn.jsdelivr.net/gh/xiaobaga281/dsh-effort-mosaic@main/docs/shapes.png" alt="五种滑块：圆 / 环 / 方形 / 胶囊 / 细棒" width="100%">
 </p>
 
 ### 粒子场
