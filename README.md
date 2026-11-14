@@ -100,7 +100,7 @@ dsh plugin --profile web add "github:xiaobaga281/dsh-effort-mosaic"
 ## 开发
 
 ```sh
-node test/smoke.mjs        # 131 项离线断言（桩件里真跑 bundle）
+node test/smoke.mjs        # 132 项离线断言（桩件里真跑 bundle）
 node tools/make-promo.mjs  # 重新生成 docs/ 下两张宣传图（真实 CSS 渲染）
 ```
 
@@ -112,6 +112,12 @@ docs/*.png           README 宣传图
 tools/make-promo.mjs 宣传图生成器
 test/smoke.mjs       冒烟测试，不进 npm 包
 ```
+
+## 更新日志
+
+- **1.0.6** — 优化粒子出格的情况。粒子层盒子改为与可见带同高、纵向格子按带高切分，
+  非越界档位或关闭越界时方块不再溢出轨道上下边界；越界动画保持原样。
+- **1.0.5** — 修复切到最高档时滑块未到位、粒子先点亮的问题。
 
 ## 兼容性
 

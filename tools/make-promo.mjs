@@ -76,6 +76,10 @@ function cellsHtml(fillW, opts) {
           const life = rnd(gx + 13, gy + 17);
           const pose = I.scatterPose("spray", sc, life, { gx: gx0, gy: gy0, dir, jit, esc }, amount, 0);
           y = gy0 + pose.dy;
+          /* 与真机一致：spray 的纵向位移夹回 30px 带内，否则最上/最下一行会被推出
+             胶囊轮廓，轨道上边界出现阶梯缺口。 */
+          const cellSpan = 5 * pose.scale;
+          y = Math.min(Math.max(y, 0), 30 - cellSpan);
           scale = pose.scale;
           op = 0.74 + 0.26 * pose.opMul;
           x = gx0 - (esc - 0.5) * 12 * sc;

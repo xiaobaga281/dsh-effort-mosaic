@@ -142,9 +142,13 @@ const registered = entries.find((e) => e.opts.name === "conversation.input.right
 ok("注册到了 conversation.input.right", registered !== null);
 ok("entry id 正确", registered !== null && registered.opts.id === "effort-mosaic-anchor");
 ok("组件是函数", registered !== null && typeof registered.Comp === "function");
-const configEntry = entries.find((e) => e.opts.name === "plugins.bundle.config") || null;
-ok("注册了插件详情页的版式面板", configEntry !== null);
-ok("版式面板的 key 就是包名", configEntry !== null && configEntry.opts.key === "dsh-effortmosaic");
+const configEntries = entries.filter((e) => e.opts.name === "plugins.bundle.config");
+ok("注册了插件详情页的版式面板", configEntries.length > 0);
+/* 两个键各注册一份：发行名（package.json name）+ 安装名（profile 里 link 的旧键）。
+   宿主按组合包的包名取键，只按发行名注册的话，link 还是老名字的用户会看不到面板。 */
+const configKeys = configEntries.map((e) => e.opts.key).sort();
+ok("版式面板同时挂了发行名与旧安装名",
+  configKeys.join(",") === "dsh-effort-mosaic,dsh-effortmosaic", configKeys.join(","));
 
 /* ── 档位解析：跟着模型走 ── */
 const I = mod.__internals;
@@ -402,7 +406,11 @@ ok("单格进度随全局进度单调不减", (function () {
 })());
 ok("粒子层允许溢出轨道上下边界", I.CSS.indexOf(".dem-mosaic{") !== -1
   && /\.dem-mosaic\{[^}]*overflow:visible/.test(I.CSS));
-ok("粒子层可以上下溢出，裁切层不再用 overflow:hidden", /\.dem-mosaic-clip\{[^}]*overflow:visible/.test(I.CSS));
+/* 裁切层必须放行纵向溢出：最高档的"越界"就是方块飞出轨道上下边，
+   设成 hidden 会把整套飞出动画裁掉。上边界齐不齐由粒子层的盒子（top/height 对齐可见带）保证。 */
+ok("裁切层放行纵向溢出（越界动画靠它）", /\.dem-mosaic-clip\{[^}]*overflow:visible/.test(I.CSS));
+ok("粒子层盒子与可见带同高（上边界不齐的根因）",
+  /\.dem-mosaic\{[^}]*top:0;height:var\(--dem-fill-h/.test(I.CSS));
 /* 左端帽必须单独裁：越界模式下不再靠 border-radius 收圆，缺了这层方块会从端帽探出去。 */
 ok("左端帽挂了圆盘遮罩（越界时也不会从端帽探出）",
   /\.dem-mosaic\{[^}]*radial-gradient\(circle at calc\(var\(--dem-fill-h/.test(I.CSS));
