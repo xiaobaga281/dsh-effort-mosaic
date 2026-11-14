@@ -65,7 +65,7 @@ function fakeEl(tag) {
     removeEventListener: () => {},
     setAttribute: () => {},
     getAttribute: () => null,
-    getBoundingClientRect: () => ({ left: 0, top: 0, width: 300, height: 28, right: 300, bottom: 28 }),
+    getBoundingClientRect: () => ({ left: 0, top: 0, width: 300, height: 30, right: 300, bottom: 30 }),
     closest: () => null,
     setPointerCapture: () => {},
     releasePointerCapture: () => {},
@@ -110,7 +110,7 @@ globalThis.Event = class {
 await import(pathToFileURL(CLIENT).href);
 
 ok("bundle 被 __ModuleLoader__ 接管", captured !== null);
-ok("bundle id 正确", captured && captured.id === "dsh-effortmosaic", captured && captured.id);
+ok("bundle id 正确", captured && captured.id === "dsh-effort-mosaic", captured && captured.id);
 ok("factory 是函数", captured && typeof captured.factory === "function");
 
 const mod = captured.factory((name) => {
@@ -144,10 +144,10 @@ ok("entry id 正确", registered !== null && registered.opts.id === "effort-mosa
 ok("组件是函数", registered !== null && typeof registered.Comp === "function");
 const configEntries = entries.filter((e) => e.opts.name === "plugins.bundle.config");
 ok("注册了插件详情页的版式面板", configEntries.length > 0);
-/* 两个键各注册一份：发行名（package.json name）+ 安装名（profile 里 link 的旧键）。
-   宿主按组合包的包名取键，只按发行名注册的话，link 还是老名字的用户会看不到面板。 */
+/* 两个键各注册一份：当前名 + 改名过渡期的旧名。
+   过渡期安装的用户 link 键仍是旧名，只注册一个会丢掉详情页面板。 */
 const configKeys = configEntries.map((e) => e.opts.key).sort();
-ok("版式面板同时挂了发行名与旧安装名",
+ok("版式面板同时挂了当前名与过渡名",
   configKeys.join(",") === "dsh-effort-mosaic,dsh-effortmosaic", configKeys.join(","));
 
 /* ── 档位解析：跟着模型走 ── */
@@ -316,9 +316,15 @@ ok("非法色值回落到默认", I.paletteOf("nope").accent === "#4A84FF");
 ok("设置项越界会被夹回", I.normalizeSettings({ knobSize: 999, burstIntensity: -5, burstSpeed: 99 }).knobSize === 34
   && I.normalizeSettings({ burstIntensity: -5 }).burstIntensity === 0.4
   && I.normalizeSettings({ burstSpeed: 99 }).burstSpeed === 1.4);
-ok("最小滑块不会小于 28（否则轨道上下会留出明显的边）",
-  I.normalizeSettings({ knobSize: 10 }).knobSize === 28,
+ok("滑块尺寸下限为 30（旧的小尺寸配置会被夹回 30）",
+  I.normalizeSettings({ knobSize: 10 }).knobSize === 30
+  && I.normalizeSettings({ knobSize: 29 }).knobSize === 30,
   String(I.normalizeSettings({ knobSize: 10 }).knobSize));
+ok("尺寸选项只剩 30 / 34 两档", (function () {
+  const m = /var SIZE_OPTIONS = \[([\s\S]*?)\];/.exec(SRC);
+  return m !== null && (m[1].match(/value:/g) || []).length === 2
+    && /value: 30/.test(m[1]) && /value: 34/.test(m[1]);
+})());
 ok("非法形状回落到实心圆", I.normalizeSettings({ knobShape: "hexagon" }).knobShape === "circle");
 ok("五种形状都收得下", I.SHAPES.join(",") === "circle,ring,rounded,pill,blade", I.SHAPES.join(","));
 ok("四种质感互不相同", (function () {
@@ -415,17 +421,16 @@ ok("粒子层盒子与可见带同高（上边界不齐的根因）",
 ok("左端帽挂了圆盘遮罩（越界时也不会从端帽探出）",
   /\.dem-mosaic\{[^}]*radial-gradient\(circle at calc\(var\(--dem-fill-h/.test(I.CSS));
 ok("进/退越界不再切 overflow 状态（避免衔接处硬切）", !/data-scatter='1'\]/.test(I.CSS));
-/* 收口必须跟着滑块走：写死「轨道高/2」时，滑块调到 28px 就会有一圈填充露在滑块外面。 */
+/* 收口必须跟着滑块走：写死「轨道高/2」时，换成 34px 的滑块就对不上内壁。 */
 ok("环是 3px 壁、其余是 1px 描边", I.knobBorderWidthOf({ knobShape: "ring" }) === 3
   && I.knobBorderWidthOf({ knobShape: "circle" }) === 1
   && I.knobBorderWidthOf({ knobShape: "pill" }) === 1
   && I.knobBorderWidthOf({ knobShape: "blade" }) === 1);
-/* 滑块比轨道小时，带高必须跟着缩 —— 否则填充/粒子比滑块上下各宽 1px，接缝露出蓝边。 */
-ok("带高跟着滑块缩（28 → 28，30 → 30，34 → 30）",
-  I.bandHeightOf({ knobSize: 28 }) === 28
-  && I.bandHeightOf({ knobSize: 30 }) === 30
+/* 可见带恒等于轨道高：滑块比轨道大时不撑大管子。 */
+ok("带高恒等于轨道高（30 / 34 两档都是 30）",
+  I.bandHeightOf({ knobSize: 30 }) === 30
   && I.bandHeightOf({ knobSize: 34 }) === 30,
-  [28, 30, 34].map(function (s) { return I.bandHeightOf({ knobSize: s }); }).join(","));
+  [30, 34].map(function (s) { return I.bandHeightOf({ knobSize: s }); }).join(","));
 ok("轨道凹槽只画在可见带里（上下留出等于带高的差）",
   /\.dem-track\{[^}]*padding:var\(--dem-band-inset/.test(I.CSS)
   && /\.dem-track\{[^}]*background-clip:content-box/.test(I.CSS));

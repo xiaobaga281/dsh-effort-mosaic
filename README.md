@@ -18,17 +18,17 @@
 - **看得见强度** —— 一条连续轨道比 Off / Low / High / Max 四个字直观
 - **手感连续** —— 拖动跟手不跳档；松手按临界阻尼收口；点击只判最近档位，不先跳到指针
 - **最高档有代价感** —— 默认只有开满时粒子才飞出轨道，四套越界动画
-- **可调到底** —— 5 种滑块 × 3 档尺寸 × 4 种填充，颜色与幅度都能改
+- **可调到底** —— 5 种滑块 × 2 档尺寸 × 4 种填充，颜色与幅度都能改
 
 档位表不写死：跟随当前模型在 `reasoning.efforts` 里声明的档位；模型没声明就不接管这一行（fail-open）。最高档时，输入框胶囊里的档位名会染成品牌蓝。
 
 ## 安装
 
 ```sh
-dsh plugin --profile web add dsh-effortmosaic
+dsh plugin --profile web add dsh-effort-mosaic
 ```
 
-桌面端：设置 → 插件 → 添加插件，填 `dsh-effortmosaic`，或仓库地址 `https://github.com/xiaobaga281/dsh-effort-mosaic`。
+桌面端：设置 → 插件 → 添加插件，填 `dsh-effort-mosaic`，或仓库地址 `https://github.com/xiaobaga281/dsh-effort-mosaic`。
 
 也可以从 GitHub 装（无构建步骤，内容与 npm 一致）：
 
@@ -36,9 +36,9 @@ dsh plugin --profile web add dsh-effortmosaic
 dsh plugin --profile web add "github:xiaobaga281/dsh-effort-mosaic"
 ```
 
-> 包名是 `dsh-effortmosaic`，仓库名是 `dsh-effort-mosaic` —— 只差一个连字符（历史原因，两者是同一个插件）。带两个连字符的 npm 包名已被占用且不可用，**别填它**。
+> 包名与仓库名现在统一为 `dsh-effort-mosaic`。改名过渡期曾短暂用过 `dsh-effortmosaic`，那个包不再维护，**别填错**。
 
-**卸载**：`dsh plugin --profile web remove dsh-effortmosaic`；桌面端在插件页里卸载。
+**卸载**：`dsh plugin --profile web remove dsh-effort-mosaic`；桌面端在插件页里卸载。
 
 **要求**：DSH Desktop `0.2.1-rc.3` 及以上，Node `>= 22`（仅测试用）。零运行时依赖、无构建步骤；改过 `lib/client.js` 需**整进程重启**才生效。
 
@@ -55,7 +55,7 @@ dsh plugin --profile web add "github:xiaobaga281/dsh-effort-mosaic"
 
 ## 视觉
 
-一条 30px 高的胶囊凹槽，自下而上叠四层：填充渐变 → 6 行 × 5px 粒子 → 刻度 → 滑块。填充、粒子、凹槽共用同一条轮廓：右端按滑块内缘收口，带高跟随滑块（`min(30, 滑块高)`），缩到 28px 也不会在接缝处露出蓝边。
+一条 30px 高的胶囊凹槽，自下而上叠四层：填充渐变 → 6 行 × 5px 粒子 → 刻度 → 滑块。填充、粒子、凹槽共用同一条轮廓：右端按滑块内缘收口，带高跟随滑块（`min(30, 滑块高)`），接缝处不会露出蓝边。
 
 粒子按离滑块的距离决定散开程度：右侧 2% 是严格贴网格的墙，往左 `amp` 增大、漂移与抖动随之变大，最左端几乎全部脱离。颜色取自同一条渐变色阶 × 明度系数（0.80–1.06），砖缝从浅蓝到纯蓝都看得清。
 
@@ -75,7 +75,7 @@ dsh plugin --profile web add "github:xiaobaga281/dsh-effort-mosaic"
 | 滑轨强调色 | 6 个预设 + 任意 hex | `#4A84FF` |
 | 最高档字符 | 跟随强调色 / 自定义 | 跟随强调色 |
 | 滑块形状 | 圆 / 环 / 方 / 胶囊 / 细棒 | 圆 |
-| 滑块大小 | 28 / 30 / 34 px | 30 |
+| 滑块大小 | 30 / 34 px | 30 |
 | 滑块填充 | 白瓷 / 染色 / 强调色 / 磨砂 | 白瓷 |
 | 点亮样式 | 能量波 / 扫描线 / 爆散 / 呼吸 | 能量波 |
 | 点亮强度 | 0.4 – 1.8× | 1.0× |
@@ -115,6 +115,7 @@ test/smoke.mjs       冒烟测试，不进 npm 包
 
 ## 更新日志
 
+- **1.0.7** — 移除滑块 28 档（只剩 30 / 34）；包名改回 `dsh-effort-mosaic`，与仓库名统一。
 - **1.0.6** — 优化粒子出格的情况。粒子层盒子改为与可见带同高、纵向格子按带高切分，
   非越界档位或关闭越界时方块不再溢出轨道上下边界；越界动画保持原样。
 - **1.0.5** — 修复切到最高档时滑块未到位、粒子先点亮的问题。

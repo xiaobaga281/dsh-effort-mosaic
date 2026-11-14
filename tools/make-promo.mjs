@@ -220,7 +220,7 @@ const shapeDefs = [
   ["circle", "圆", 30],
   ["ring", "环", 30],
   ["rounded", "方形", 30],
-  ["pill", "胶囊", 28],
+  ["pill", "胶囊", 30],
   ["blade", "细棒", 30],
 ];
 const shapes = `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
@@ -242,7 +242,7 @@ body{width:1200px;height:172px;overflow:hidden;background:#080b11;color:#e9eefb;
 .cap{margin-top:14px;font-size:11.5px;color:#8494ac;letter-spacing:.08em}
 </style></head><body>
 <div class="bg"></div>
-<div class="head"><b>五种滑块</b><span>三档尺寸 · 四种填充 · 强调色可换</span></div>
+<div class="head"><b>五种滑块</b><span>两档尺寸 · 四种填充 · 强调色可换</span></div>
 <div class="row">
 ${shapeDefs.map(([shape, name, size]) => {
   const w = 196;
