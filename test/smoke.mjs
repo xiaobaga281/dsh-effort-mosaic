@@ -110,7 +110,7 @@ globalThis.Event = class {
 await import(pathToFileURL(CLIENT).href);
 
 ok("bundle 被 __ModuleLoader__ 接管", captured !== null);
-ok("bundle id 正确", captured && captured.id === "dsh-effort-mosaic", captured && captured.id);
+ok("bundle id 正确", captured && captured.id === "dsh-effortmosaic", captured && captured.id);
 ok("factory 是函数", captured && typeof captured.factory === "function");
 
 const mod = captured.factory((name) => {
@@ -144,7 +144,7 @@ ok("entry id 正确", registered !== null && registered.opts.id === "effort-mosa
 ok("组件是函数", registered !== null && typeof registered.Comp === "function");
 const configEntry = entries.find((e) => e.opts.name === "plugins.bundle.config") || null;
 ok("注册了插件详情页的版式面板", configEntry !== null);
-ok("版式面板的 key 就是包名", configEntry !== null && configEntry.opts.key === "dsh-effort-mosaic");
+ok("版式面板的 key 就是包名", configEntry !== null && configEntry.opts.key === "dsh-effortmosaic");
 
 /* ── 档位解析：跟着模型走 ── */
 const I = mod.__internals;

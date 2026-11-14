@@ -36,7 +36,7 @@ dsh plugin --profile web add dsh-effortmosaic
 dsh plugin --profile web add "github:xiaobaga281/dsh-effort-mosaic"
 ```
 
-> npm 包名是 `dsh-effortmosaic`（少一个连字符），仓库名是 `dsh-effort-mosaic`。**别填带两个连字符的包名**，registry 上暂时不可用。装一个即可。
+> 包名是 `dsh-effortmosaic`，仓库名是 `dsh-effort-mosaic` —— 只差一个连字符（历史原因，两者是同一个插件）。带两个连字符的 npm 包名已被占用且不可用，**别填它**。
 
 **卸载**：`dsh plugin --profile web remove dsh-effortmosaic`；桌面端在插件页里卸载。
 
