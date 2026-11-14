@@ -1,6 +1,6 @@
 {
   "name": "dsh-effort-mosaic",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "把 DSH 模型菜单里的推理等级档位换成一条像素马赛克粒子轨道：右侧是静止的密实墙，越往左越散开 / A pixel-mosaic reasoning-effort track for DeepSeek Harness",
   "license": "MIT",
   "repository": {
