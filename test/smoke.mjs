@@ -584,6 +584,18 @@ ok("按下不移动滑块（先跳后回的来源已移除）", (function () {
 })());
 ok("点击落档以 TAP_OMEGA 起吸附", /beginSettle\(pctOfIndex\(tapTo[^)]*\),\s*0,\s*TAP_OMEGA\)/.test(SRC));
 ok("拖动松手仍接住指针初速", /beginSettle\(pctOfIndex\(target, now\.count\), speed\)/.test(SRC));
+/* ── 点亮时机：切到最高档时，动画必须等滑块落位，不能抢在滑块前面 ── */
+ok("点亮排队到落位，收尾时兑现", (function () {
+  var def = /function flushPendingBurst\(\)/.test(SRC);
+  var calls = (SRC.match(/flushPendingBurst\(\)/g) || []).length;
+  return def && calls >= 3;            /* 定义 1 次 + beginSettle 里两处调用 */
+})());
+ok("切档处理器不再直接播点亮", (SRC.match(/now\.fireBurst\(\)/g) || []).length === 1,
+  String((SRC.match(/now\.fireBurst\(\)/g) || []).length));
+ok("点击 / 松手 / 键盘三条路径都只是排队", (SRC.match(/now\.armBurstOnLand\(\)/g) || []).length === 3,
+  String((SRC.match(/now\.armBurstOnLand\(\)/g) || []).length));
+ok("落位前 shownIndex 副作用让位给吸附", /settleRef\.current !== null \|\| burstPendingRef\.current/.test(SRC));
+ok("重新按住会丢弃未兑现的点亮", /dropPendingBurst/.test(SRC));
 
 /* ── 报告 ── */
 if (fails.length === 0) {
