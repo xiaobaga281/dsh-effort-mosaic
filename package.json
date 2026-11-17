@@ -1,7 +1,8 @@
 {
   "name": "dsh-effort-mosaic",
-  "version": "1.0.7",
-  "description": "把 DSH 模型菜单里的推理等级档位换成一条像素马赛克粒子轨道：右侧是静止的密实墙，越往左越散开 / A pixel-mosaic reasoning-effort track for DeepSeek Harness",
+  "version": "1.1.0",
+  "description": "把 DSH 模型菜单里的推理等级档位换成一条滑轨：马赛克粒子墙（右侧静止、越往左越散）或 霓虹（蓝轨道 + 最高档蓝紫擦除渐变）。两套风格可切换 / A reasoning-effort track for DeepSeek Harness, with a pixel-mosaic style and a 霓虹变体",
+  "icon": "./icon.svg",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -18,6 +19,7 @@
     "lib/index.js",
     "lib/client.js",
     "cordis.patch.yml",
+    "icon.svg",
     "README.md"
   ],
   "keywords": [
@@ -30,6 +32,10 @@
   ],
   "engines": {
     "node": ">=22"
+  },
+  "scripts": {
+    "test": "node test/smoke.mjs",
+    "promo": "node tools/make-promo.mjs"
   },
   "dsh": {
     "bundle": {
