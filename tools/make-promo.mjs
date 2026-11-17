@@ -37,6 +37,7 @@ globalThis.document = {
   createElement: fakeEl, querySelector: () => null, querySelectorAll: () => [],
   head: fakeEl(), body: fakeEl(), addEventListener() {},
 };
+globalThis.__DEM_TEST_HOOK__ = true;
 await import(pathToFileURL("./lib/client.js").href);
 const I = captured.factory((n) => (n === "react" ? ReactStub
   : n === "react-dom" ? { createPortal: (x) => x } : (() => { throw new Error(n); })())).__internals;

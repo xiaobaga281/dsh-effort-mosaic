@@ -5,6 +5,7 @@
  *   node test/smoke.mjs
  */
 import { pathToFileURL } from "node:url";
+import { execFileSync } from "node:child_process";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import fs from "node:fs";
@@ -107,6 +108,8 @@ globalThis.Event = class {
 };
 
 /* ── 执行 bundle ── */
+/* 测试钩子：client.js 只有看到它才导出 __internals（正式 bundle 默认不挂） */
+globalThis.__DEM_TEST_HOOK__ = true;
 await import(pathToFileURL(CLIENT).href);
 
 ok("bundle 被 __ModuleLoader__ 接管", captured !== null);
@@ -124,6 +127,33 @@ ok("导出 inject", Array.isArray(mod.inject), mod.inject && mod.inject.join(","
 ok("inject 声明了 modelDirectories", mod.inject.includes("modelDirectories"));
 ok("inject 声明了 remote.session", mod.inject.includes("remote.session"));
 ok("导出 __internals", mod.__internals && typeof mod.__internals === "object");
+
+/* 生产边界：没有 __DEM_TEST_HOOK__ 的进程里，bundle 不许把测试接口挂出来。
+   这里另起一个干净进程验证，避免被本进程已经设好的钩子污染。 */
+ok("无测试钩子时 bundle 不导出 __internals", (function () {
+  const script = `
+    let captured = null;
+    globalThis.window = { __ModuleLoader__: { load: (m) => { captured = m; } } };
+    await import(${JSON.stringify(pathToFileURL(CLIENT).href)});
+    const ReactStub = {
+      Fragment: Symbol("F"),
+      createElement: () => ({}),
+      useRef: (v) => ({ current: v }),
+      useState: (v) => [typeof v === "function" ? v() : v, () => {}],
+      useEffect: () => {},
+      useSyncExternalStore: (_s, g) => g(),
+    };
+    const mod = captured.factory(() => ReactStub);
+    if (mod.__internals !== undefined) process.exit(1);
+    if (typeof mod.apply !== "function") process.exit(2);
+  `;
+  try {
+    execFileSync(process.execPath, ["--input-type=module", "-e", script], { stdio: "pipe" });
+    return true;
+  } catch (err) {
+    return false;
+  }
+})());
 
 /* ── apply 不抛错 ── */
 let entries = [];
@@ -341,6 +371,26 @@ ok("染色比白瓷更蓝", (function () {
   return white.indexOf("#ffffff") !== -1 && tinted.indexOf(pal.stops[2]) !== -1;
 })());
 ok("四种点亮样式都收得下", I.BURST_STYLES.join(",") === "ripple,scan,shatter,pulse", I.BURST_STYLES.join(","));
+/* 轨道风格：默认仍是马赛克（老用户升级后视觉不变），非法值回落。 */
+ok("轨道风格默认是马赛克（升级后视觉不变）", I.normalizeSettings({}).railStyle === "mosaic",
+  String(I.normalizeSettings({}).railStyle));
+ok("轨道风格只认两套，非法回落到马赛克", I.normalizeSettings({ railStyle: "codex" }).railStyle === "codex"
+  && I.normalizeSettings({ railStyle: "aurora" }).railStyle === "mosaic");
+
+/* 霓虹最高档的渐变必须跟着「滑轨强调色」走：
+   默认色用原始采样值；换色后整条渐变平移，不能再是写死的紫。 */
+ok("霓虹最高档渐变跟随强调色", (function () {
+  var d = I.neonGradientOf("#4A84FF");
+  var r = I.neonGradientOf("#FF4A4A");
+  var b = I.neonGradientOf("#22C55E");
+  return d.indexOf("#2546D0 0%") !== -1
+    && r.indexOf("#2546D0 0%") === -1
+    && b.indexOf("#2546D0 0%") === -1
+    && r !== b
+    && d.indexOf("#B37DFF") !== -1;
+})(), (function () {
+  return I.neonGradientOf("#FF4A4A").slice(0, 70);
+})());
 /* 越界：默认只在最高档出现，用户可改成全档位；旧存档里的布尔 scatterOut 不再参与。 */
 ok("粒子越界默认只在最高档出现", I.normalizeSettings({}).scatterMode === "top");
 ok("越界模式只认三态，非法回落到默认", I.normalizeSettings({ scatterMode: "sometimes" }).scatterMode === "top"
@@ -435,14 +485,142 @@ ok("轨道凹槽只画在可见带里（上下留出等于带高的差）",
   /\.dem-track\{[^}]*padding:var\(--dem-band-inset/.test(I.CSS)
   && /\.dem-track\{[^}]*background-clip:content-box/.test(I.CSS));
 ok("粒子裁切层跟着带高走", /\.dem-mosaic-clip\{[^}]*height:var\(--dem-fill-h/.test(I.CSS));
+/* 霓虹风格的样式必须真的注入了，否则切过去就是一条死板蓝条。 */
+ok("霓虹风格样式已注入（平涂轨道 / 擦除 / 烟花）",
+  I.CSS.indexOf(".dem-track[data-rail='codex'] .dem-fill") !== -1
+  && I.CSS.indexOf(".dem-codex-wipe") !== -1
+  && I.CSS.indexOf(".dem-codex-fw i") !== -1);
+ok("霓虹擦除带软边（渐变终点收到全透明，不能留半透明蓝边）",
+  /\.dem-codex-wipe\{[^}]*rgba\(0,0,0,0\) 100%/.test(I.CSS));
+
+/* 霓虹的「点亮强度 / 点亮速度」必须真的落到四套样式上：峰值与时长都随设置变化。 */
+ok("霓虹点亮强度/速度真实生效", (function () {
+  var base = I.neonBurstVarsOf({ burstIntensity: 1, burstSpeed: 1 });
+  var strong = I.neonBurstVarsOf({ burstIntensity: 1.8, burstSpeed: 1 });
+  var fast = I.neonBurstVarsOf({ burstIntensity: 1, burstSpeed: 1.4 });
+  return base.ripple === "1.100" && strong.ripple === "1.180"
+    && strong.shatter === "1.252"
+    && base.durPulse === "2.400s" && fast.durPulse === "1.714s"
+    && I.CSS.indexOf("var(--dem-neon-peak-ripple") !== -1
+    && I.CSS.indexOf("var(--dem-neon-dur-ripple") !== -1;
+})());
+
+/* 官方 React 重绘会删掉命令式插入的容器：只看"行没变"会把轨道永久丢掉。 */
+ok("容器被官方重绘删掉时必须重新挂载", (function () {
+  var row = { isConnected: true };
+  function entry(container) { return { row: row, container: container }; }
+  return I.bridgeAlive(entry({ isConnected: true, parentNode: row }), row) === true
+    && I.bridgeAlive(entry(null), row) === false
+    && I.bridgeAlive(entry({ isConnected: false, parentNode: row }), row) === false
+    && I.bridgeAlive(entry({ isConnected: true, parentNode: null }), row) === false;
+})());
+
+/* 菜单关闭 ≠ 该拆桥：旧行还在时必须保留挂载，否则切一次档位后轨道就没了。 */
+ok("菜单关闭时保留轨道挂载（下次打开复用同一行）", (function () {
+  var kept = { row: { isConnected: true } };
+  var gone = { row: { isConnected: false } };
+  return I.shouldKeepMount(kept, null) === true
+    && I.shouldKeepMount(gone, null) === false
+    && I.shouldKeepMount(kept, { isConnected: true }) === false;
+})());
+
+/* 结构闸门：组件的卸载清理只能引用**自己组件里声明**的 ref。
+   曾经把 burstTimerRef（声明在 EffortTrack）写进 ConnectedTrack 的清理，
+   菜单一关就抛 ReferenceError；React 提交阶段出错会连带卸掉整棵子树，
+   于是"切一次档位 → 浮窗关闭 → 再打开，滑轨永久消失"。 */
+function componentBlock(name) {
+  const start = SRC.indexOf("    function " + name + "(");
+  if (start < 0) return "";
+  const rest = SRC.slice(start + 1);
+  const next = rest.search(/\n    function [A-Za-z_$][\w$]*\(/);
+  return (next < 0 ? rest : rest.slice(0, next)).trim();
+}
+ok("ConnectedTrack 的卸载清理不越界引用 EffortTrack 的 burstTimerRef", (function () {
+  const block = componentBlock("ConnectedTrack");
+  return block.length > 0 && block.indexOf("burstTimerRef") === -1;
+})(), componentBlock("ConnectedTrack").indexOf("burstTimerRef"));
+ok("EffortTrack 自己在卸载时清掉点亮定时器", (function () {
+  const block = componentBlock("EffortTrack");
+  return block.indexOf("var burstTimerRef = React.useRef(null);") !== -1
+    && /React\.useEffect\(function \(\) \{\s*return function \(\) \{[\s\S]{0,400}?burstTimerRef\.current/.test(block);
+})());
+
+/* 结构闸门：每次打开菜单 ConnectedTrack 都会重新挂载，width 从 0 起。
+   首次量宽那一帧若还开着过渡，旋钮会从最左端（left≈14px）用 .3s 划到真实档位，
+   看起来就是"每次打开都从最左端起步"。必须在量宽那一帧关掉 .dem-knob / .dem-fill
+   的 transition，等这一帧画完再恢复。 */
+ok("首次量宽那一帧关闭旋钮与填充的过渡", (function () {
+  return SRC.indexOf(".dem-track[data-measured='0'] .dem-knob") !== -1
+    && SRC.indexOf(".dem-track[data-measured='0'] .dem-fill{transition:none}") !== -1;
+})());
+ok("量宽之后由独立提交恢复过渡（正常换档仍会动画）", (function () {
+  const block = componentBlock("EffortTrack");
+  return block.indexOf('"data-measured": measured ? "1" : "0"') !== -1
+    && /React\.useEffect\(function \(\) \{\s*if \(width > 0 && !measured\) setMeasured\(true\)/.test(block);
+})());
+
+/* 结构闸门：导出面只保留测试真正用到的项，避免 __internals 变成杂物抽屉。 */
+ok("__internals 没有测试与工具从未使用的死导出", (function () {
+  const m = /\n\s+exports\.__internals = \{([\s\S]*?)\n\s{6}\};/.exec(SRC);
+  if (!m) return false;
+  const keys = [...m[1].matchAll(/^\s{8}([A-Za-z_$][\w$]*):/gm)].map(function (x) { return x[1]; });
+  /* 导出面同时服务离线断言与宣传图生成器，两边都算"有人用"。 */
+  const users = [
+    fs.readFileSync(fileURLToPath(import.meta.url), "utf8"),
+    fs.readFileSync(resolve(HERE, "../tools/make-promo.mjs"), "utf8"),
+  ].join("\n");
+  return keys.length > 0 && keys.every(function (k) {
+    return new RegExp("\\b" + k + "\\b").test(users);
+  });
+})());
+
+/* ── 隔离性：霓虹的样式一条都不许漏到马赛克轨道上 ──────────────
+   规则里凡出现 .dem-codex* 的选择器，都必须带 [data-rail='codex']。
+   这条闸一旦有人改坏，马赛克轨道的视觉就会被 霓虹的样式串味。 */
+ok("霓虹的所有样式都限定在 data-rail='codex' 下", (function () {
+  const sels = I.CSS.split("}").map(function (chunk) { return chunk.split("{")[0].trim(); });
+  const bad = sels.filter(function (sel) {
+    return sel.indexOf("dem-codex") !== -1
+      && sel.indexOf("[data-rail='codex']") === -1
+      && sel.indexOf("@keyframes") !== 0;
+  });
+  return bad.length === 0;
+})(), (function () {
+  const sels = I.CSS.split("}").map(function (chunk) { return chunk.split("{")[0].trim(); });
+  return sels.filter(function (sel) {
+    return sel.indexOf("dem-codex") !== -1 && sel.indexOf("[data-rail='codex']") === -1;
+  }).slice(0, 2).join(" | ");
+})());
+
+/* 马赛克轨道的点亮动效必须原样还在：霓虹那一组是**并列**新增，不是替换。 */
+ok("马赛克四条点亮动画都在（霓虹是并列新增，没有替换）",
+  I.CSS.indexOf("animation:demGlow .75s") !== -1
+  && I.CSS.indexOf("animation:demScanGlow") !== -1
+  && I.CSS.indexOf("animation:demShatter") !== -1
+  && I.CSS.indexOf("animation:demPulse 2.4s") !== -1);
+ok("马赛克点亮峰值已柔化到 1.25 / 1.12（原为 1.55 / 1.4）",
+  /@keyframes demGlow\{0%\{filter:brightness\(1\) saturate\(1\)\}26%\{filter:brightness\(1\.25\) saturate\(1\.12\)\}/.test(I.CSS));
+
+/* 扫描线的亮带会被 transform 推出轨道；轨道本身为了粒子越界必须 overflow:visible，
+   所以亮带要单独套一层圆角裁切壳。 */
+ok("扫描线光带被独立裁切壳包住，不会越出轨道",
+  /\.dem-flush-clip\{[^}]*border-radius:999px;overflow:hidden/.test(I.CSS)
+  && /\.dem-flush\{position:absolute;inset:0/.test(I.CSS)
+  && SRC.indexOf('className: "dem-flush-clip"') !== -1);
+
+ok("爆散峰值已从 1.95/1.7 柔化到 1.45/1.25",
+  /@keyframes demShatter\{0%\{filter:brightness\(1\) saturate\(1\)\}14%\{filter:brightness\(1\.45\) saturate\(1\.25\)\}/.test(I.CSS));
 ok("填充右端圆角跟着滑块（不是写死半高）", /\.dem-fill\{[^}]*border-radius[^}]*var\(--dem-fill-tail-radius/.test(I.CSS));
-ok("收口遮罩 = 竖切 + 圆盘两层（并集）", (function () {
+ok("收口遮罩 = 竖切 + 圆盘两层（并集），且边缘带 1px 斜坡", (function () {
   const rule = /\.dem-fill\{[^}]*\}/.exec(I.CSS);
   if (!rule) return false;
   const text = rule[0];
-  return text.indexOf("linear-gradient(90deg,#000 0 var(--dem-fill-tail-x") !== -1
+  return text.indexOf("linear-gradient(90deg,#000 0 calc(var(--dem-fill-tail-x") !== -1
     && text.indexOf("radial-gradient(circle at var(--dem-fill-tail-x") !== -1
-    && text.indexOf("mask-image") !== -1;
+    && text.indexOf("mask-image") !== -1
+    /* 硬切换会在亚像素位置出锯齿，必须有 .5px / 1px 的过渡带 */
+    && text.indexOf("calc(var(--dem-fill-tail-x,100%) - .5px)") !== -1
+    && text.indexOf("calc(var(--dem-fill-tail-radius,15px) - 1px)") !== -1;
 })(), /\.dem-fill\{[^}]*\}/.exec(I.CSS));
 ok("粒子层与填充层共用同一条收口遮罩", (function () {
   const pick = function (name) {

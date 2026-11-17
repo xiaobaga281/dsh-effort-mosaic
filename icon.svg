@@ -1,0 +1,16 @@
+<svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 左侧散开的马赛克粒子：越靠近滑块越大越密 -->
+  <rect x="4.7" y="16.9" width="2.2" height="2.2" rx="0.55" fill="url(#mosaic)"/>
+  <rect x="8.2" y="16.5" width="3" height="3" rx="0.75" fill="url(#mosaic)"/>
+  <rect x="12.6" y="16.1" width="3.8" height="3.8" rx="0.9" fill="url(#mosaic)"/>
+  <!-- 轨道 -->
+  <rect x="15.6" y="16.2" width="15.8" height="3.6" rx="1.8" fill="url(#mosaic)" opacity="0.5"/>
+  <!-- 滑块：贴住轨道右端（最高档） -->
+  <rect x="21.8" y="10.3" width="9.6" height="15.4" rx="4.8" fill="url(#mosaic)"/>
+  <defs>
+    <linearGradient id="mosaic" x1="18" y1="9" x2="18" y2="27" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#54ECE7"/>
+      <stop offset="1" stop-color="#658EFF"/>
+    </linearGradient>
+  </defs>
+</svg>
