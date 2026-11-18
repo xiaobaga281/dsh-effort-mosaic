@@ -136,7 +136,7 @@ dsh plugin --profile web add "github:xiaobaga281/dsh-effort-mosaic"
 ## 开发
 
 ```sh
-npm test                   # 170 项离线断言（桩件里真跑 bundle）
+npm test                   # 173 项离线断言（桩件里真跑 bundle）
 node tools/make-promo.mjs  # 重新生成 docs/ 下三张宣传图（真实 CSS 渲染）
 ```
 
@@ -160,6 +160,7 @@ README.md / LICENSE  说明与许可
 
 完整记录见 [CHANGELOG.md](./CHANGELOG.md)。
 
+- **1.1.6** — 修复最高档滑块右缘的橙色直角：遮罩改为填充/粒子层本地解析，右端圆角取滑块外缘；修复打开浮层时从 0 档划到真实档位。
 - **1.1.5** — 文档维护：新增霓虹轨道宣传图（真实 CSS 渲染），补齐 npm `homepage` / `bugs` 元数据；无运行时变化。
 - **1.1.4** — 修复白瓷旋钮边缘仍残留 1px 轨道色；粒子轨填充不再被 rAF 每帧覆写，切换轨道风格会重建粒子墙；补齐点击/拖动与色轨同步、档位吸附、精确端头点亮和霓虹粒子尺寸。
 - **1.1.3** — 修复关闭浮窗后轨道消失、每次打开从最左端划到真实档位；测试接口不再进入正式 bundle。

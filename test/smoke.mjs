@@ -574,8 +574,21 @@ ok("首次量宽那一帧关闭旋钮与填充的过渡", (function () {
 })());
 ok("量宽之后由独立提交恢复过渡（正常换档仍会动画）", (function () {
   const block = componentBlock("EffortTrack");
-  return block.indexOf('"data-measured": measured ? "1" : "0"') !== -1
+  return block.indexOf('"data-measured": measured && introDone ? "1" : "0"') !== -1
     && /React\.useEffect\(function \(\) \{\s*if \(width > 0 && !measured\) setMeasured\(true\)/.test(block);
+})());
+ok("档位快照未就绪时不先画在 0 档（优先读官方行的当前档位）", (function () {
+  return SRC.indexOf(".dem-track[data-ready='0']{opacity:0;pointer-events:none}") !== -1
+    && componentBlock("ConnectedTrack").indexOf("var rowIndex = rowEffortIndex(entry.row, levels);") !== -1
+    && componentBlock("ConnectedTrack").indexOf("var seedIndex = liveIndex >= 0 ? liveIndex : rowIndex;") !== -1
+    && componentBlock("ConnectedTrack").indexOf("var indexReady = draft !== null || seedIndex >= 0;") !== -1;
+})());
+ok("首次显形那一帧仍关过渡，下一帧才恢复（0→真实档位不会滑出来）", (function () {
+  const block = componentBlock("EffortTrack");
+  return block.indexOf("var ready = measured && indexReady;") !== -1
+    && /if \(!ready \|\| introDone\) return undefined;/.test(block)
+    && /window\.requestAnimationFrame\(function \(\) \{ setIntroDone\(true\); \}\);/.test(block)
+    && block.indexOf('"data-ready": ready ? "1" : "0"') !== -1;
 })());
 
 /* 结构闸门：导出面只保留测试真正用到的项，避免 __internals 变成杂物抽屉。 */
@@ -630,13 +643,17 @@ ok("扫描线光带被独立裁切壳包住，不会越出轨道",
 ok("爆散峰值已从 1.95/1.7 柔化到 1.45/1.25",
   /@keyframes demShatter\{0%\{filter:brightness\(1\) saturate\(1\)\}14%\{filter:brightness\(1\.45\) saturate\(1\.25\)\}/.test(I.CSS));
 ok("填充右端圆角跟着滑块（不是写死半高）", /\.dem-fill\{[^}]*border-radius[^}]*var\(--dem-fill-tail-radius/.test(I.CSS));
+ok("填充右端取滑块外缘半径（圆角方不会比滑块少 1px 露出直角）", (function () {
+  return I.fillTailRadiusOf({ knobShape: "rounded", knobSize: 30 }) === 10
+    && I.knobRadiusOf({ knobShape: "rounded", knobSize: 30 }) === "10px"
+    && I.fillTailRadiusOf({ knobShape: "circle", knobSize: 30 }) === 15
+    && I.fillTailRadiusOf({ knobShape: "ring", knobSize: 30 }) === 12;
+})());
 ok("实心滑块收口只用竖切，空心环才加圆盘", (function () {
-  const solid = I.tailMaskOf({ knobShape: "rounded" });
-  const ring = I.tailMaskOf({ knobShape: "ring" });
-  return solid.indexOf("linear-gradient(90deg,#000") !== -1
-    && solid.indexOf("radial-gradient") === -1
-    && ring.indexOf("linear-gradient(90deg,#000") !== -1
-    && ring.indexOf("radial-gradient(circle at var(--dem-fill-tail-x") !== -1;
+  return /\.dem-fill\{[^}]*mask-image:linear-gradient\(90deg,#000[^}]*var\(--dem-fill-tail-x/.test(I.CSS)
+    && I.CSS.indexOf(".dem-track[data-knob-shape='ring'] .dem-fill") !== -1
+    && /\.dem-track\[data-knob-shape='ring'\] .dem-fill[^}]*radial-gradient\(circle at var\(--dem-fill-tail-x/.test(I.CSS)
+    && I.CSS.indexOf("mask-image:var(--dem-tail-mask") === -1;
 })());
 ok("填充与粒子裁切层共用同一条可切换遮罩", (function () {
   const pick = function (name) {
@@ -645,8 +662,10 @@ ok("填充与粒子裁切层共用同一条可切换遮罩", (function () {
   };
   const fill = pick("dem-fill");
   const clip = pick("dem-mosaic-clip");
-  return fill.indexOf("mask-image:var(--dem-tail-mask") !== -1
-    && clip.indexOf("mask-image:var(--dem-tail-mask") !== -1;
+  return fill.indexOf("mask-image:linear-gradient(90deg,#000") !== -1
+    && clip.indexOf("mask-image:linear-gradient(90deg,#000") !== -1
+    && fill.indexOf("var(--dem-tail-mask") === -1
+    && clip.indexOf("var(--dem-tail-mask") === -1;
 })());
 ok("圆角方 / 胶囊的收口切在圆心，不提前截断色轨",
   /var cut = kr\.width \+ 0\.5 < tr\.height \? kr\.width \/ 2 : 0/.test(SRC));
