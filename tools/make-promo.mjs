@@ -2,15 +2,17 @@
  * 生成 README 的两张宣传图。用的是 lib/client.js 导出的**真实 CSS**、真实调色板、
  * 真实散射公式，所以图和真机是同一套观感；改了视觉参数就重跑一次。
  *
- *   node tools/make-promo.mjs            # 在仓库根目录执行，输出 .workbuddy/tmp/{hero,shapes}.html
+ *   node tools/make-promo.mjs            # 在仓库根目录执行，输出系统临时目录 dsh-effort-mosaic-promo/{hero,shapes}.html
  *   # 再用浏览器无头截图（Edge / Chrome 都可以）：
  *   msedge --headless=new --force-device-scale-factor=1.5 --window-size=1200,630 \
- *          --screenshot=docs/hero.png  file:///<abs>/.workbuddy/tmp/hero.html
+ *          --screenshot=docs/hero.png  file:///<temp>/dsh-effort-mosaic-promo/hero.html
  *   msedge --headless=new --force-device-scale-factor=2   --window-size=1200,172 \
- *          --screenshot=docs/shapes.png file:///<abs>/.workbuddy/tmp/shapes.html
+ *          --screenshot=docs/shapes.png file:///<temp>/dsh-effort-mosaic-promo/shapes.html
  */
 import { pathToFileURL } from "node:url";
 import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 
 const fakeEl = () => ({
   style: {}, dataset: {}, children: [], firstChild: null, isConnected: true, textContent: "",
@@ -253,7 +255,7 @@ ${shapeDefs.map(([shape, name, size]) => {
 </div>
 </body></html>`;
 
-const OUT = ".workbuddy/tmp";
+const OUT = path.join(os.tmpdir(), "dsh-effort-mosaic-promo");
 fs.mkdirSync(OUT, { recursive: true });
 fs.writeFileSync(OUT + "/hero.html", hero);
 fs.writeFileSync(OUT + "/shapes.html", shapes);

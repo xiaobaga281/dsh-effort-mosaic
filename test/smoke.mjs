@@ -492,6 +492,25 @@ ok("霓虹风格样式已注入（平涂轨道 / 擦除 / 烟花）",
   && I.CSS.indexOf(".dem-codex-fw i") !== -1);
 ok("霓虹擦除带软边（渐变终点收到全透明，不能留半透明蓝边）",
   /\.dem-codex-wipe\{[^}]*rgba\(0,0,0,0\) 100%/.test(I.CSS));
+/* 霓虹粒子原来只有 2px / 2–4.4px，视觉上像灰尘；现在尘埃 3px、火星 2.8–5.2px。 */
+ok("霓虹尘埃粒子已放大到 3px",
+  /\.dem-codex-dust i::before\{[^}]*width:3px;height:3px/.test(I.CSS));
+ok("霓虹火星已放大到 2.8–5.2px",
+  /"--sz": \(2\.8 \+ codexRand\(i, 29\) \* 2\.4\)/.test(SRC));
+/* 换档位置走 left，不是 translate：填充 width 走布局路径，旋钮也必须走布局，
+   否则旋钮在合成层先动、填充还在重排，视觉上就是色轨滞后。 */
+ok("旋钮位置走 left，和填充 width 同步",
+  /\.dem-knob\{[^}]*left:var\(--dem-knob-x,0px\)/.test(I.CSS)
+  && !/\.dem-knob\{[^}]*translate:var\(--dem-knob-x/.test(I.CSS));
+/* 外圈 1px 中性护栏：盖住圆角滑块压在填充上时露出的那一角，不缩短色轨。 */
+ok("旋钮有 1px 外圈中性护栏",
+  /\.dem-knob\{[^}]*0 0 0 1px var\(--dem-knob-guard/.test(I.CSS));
+/* 第二道 1px 中性外沿：白钮抗锯齿边缘会与轨道填充混色，实机左缘会留 1px 粉红过渡。 */
+ok("旋钮有第二道 1px 中性外沿",
+  /\.dem-knob\{[^}]*0 0 0 2px #dde3ec/.test(I.CSS));
+/* 详情页预览旋钮靠 right 定位，必须显式撤掉 base 的 left。 */
+ok("预览旋钮靠 right 定位，不受 base left 影响",
+  /\.dem-cfg-preview-knob\{[^}]*left:auto/.test(I.CSS));
 
 /* 霓虹的「点亮强度 / 点亮速度」必须真的落到四套样式上：峰值与时长都随设置变化。 */
 ok("霓虹点亮强度/速度真实生效", (function () {
@@ -611,27 +630,26 @@ ok("扫描线光带被独立裁切壳包住，不会越出轨道",
 ok("爆散峰值已从 1.95/1.7 柔化到 1.45/1.25",
   /@keyframes demShatter\{0%\{filter:brightness\(1\) saturate\(1\)\}14%\{filter:brightness\(1\.45\) saturate\(1\.25\)\}/.test(I.CSS));
 ok("填充右端圆角跟着滑块（不是写死半高）", /\.dem-fill\{[^}]*border-radius[^}]*var\(--dem-fill-tail-radius/.test(I.CSS));
-ok("收口遮罩 = 竖切 + 圆盘两层（并集），且边缘带 1px 斜坡", (function () {
-  const rule = /\.dem-fill\{[^}]*\}/.exec(I.CSS);
-  if (!rule) return false;
-  const text = rule[0];
-  return text.indexOf("linear-gradient(90deg,#000 0 calc(var(--dem-fill-tail-x") !== -1
-    && text.indexOf("radial-gradient(circle at var(--dem-fill-tail-x") !== -1
-    && text.indexOf("mask-image") !== -1
-    /* 硬切换会在亚像素位置出锯齿，必须有 .5px / 1px 的过渡带 */
-    && text.indexOf("calc(var(--dem-fill-tail-x,100%) - .5px)") !== -1
-    && text.indexOf("calc(var(--dem-fill-tail-radius,15px) - 1px)") !== -1;
-})(), /\.dem-fill\{[^}]*\}/.exec(I.CSS));
-ok("粒子层与填充层共用同一条收口遮罩", (function () {
+ok("实心滑块收口只用竖切，空心环才加圆盘", (function () {
+  const solid = I.tailMaskOf({ knobShape: "rounded" });
+  const ring = I.tailMaskOf({ knobShape: "ring" });
+  return solid.indexOf("linear-gradient(90deg,#000") !== -1
+    && solid.indexOf("radial-gradient") === -1
+    && ring.indexOf("linear-gradient(90deg,#000") !== -1
+    && ring.indexOf("radial-gradient(circle at var(--dem-fill-tail-x") !== -1;
+})());
+ok("填充与粒子裁切层共用同一条可切换遮罩", (function () {
   const pick = function (name) {
     const m = new RegExp("\\." + name + "\\{[^}]*\\}").exec(I.CSS);
     return m ? m[0] : "";
   };
   const fill = pick("dem-fill");
   const clip = pick("dem-mosaic-clip");
-  return fill.indexOf("mask-image") !== -1 && clip.indexOf("mask-image") !== -1
-    && fill.indexOf("var(--dem-fill-tail-x") !== -1 && clip.indexOf("var(--dem-fill-tail-x") !== -1;
+  return fill.indexOf("mask-image:var(--dem-tail-mask") !== -1
+    && clip.indexOf("mask-image:var(--dem-tail-mask") !== -1;
 })());
+ok("圆角方 / 胶囊的收口切在圆心，不提前截断色轨",
+  /var cut = kr\.width \+ 0\.5 < tr\.height \? kr\.width \/ 2 : 0/.test(SRC));
 ok("圆心/半径两个变量每层都要写（webkit + 标准）", I.CSS.split("var(--dem-fill-tail-x").length - 1 >= 4);
 ok("方块缩放基准钉在左上角", /\.dem-cell\{[^}]*transform-origin:0 0/.test(I.CSS));
 ok("非法点亮样式回落到能量波", I.normalizeSettings({ burstStyle: "starwars" }).burstStyle === "ripple");
@@ -656,6 +674,15 @@ ok("环的内光比白瓷更弱", (function () {
 ok("白瓷是竖向渐变而不是纯平涂", I.knobSurfaceOf({ knobShape: "circle", knobFill: "white" }, I.paletteOf("#4A84FF")).indexOf("linear-gradient") !== -1);
 ok("强调色珠带自己的色阶", I.knobSurfaceOf({ knobShape: "circle", knobFill: "accent" }, I.paletteOf("#4A84FF")).indexOf("#4a84ff".toUpperCase()) !== -1
   || I.knobSurfaceOf({ knobShape: "circle", knobFill: "accent" }, I.paletteOf("#4A84FF")).indexOf("#4A84FF") !== -1);
+/* 白瓷环壁以前取 pal.stops[0]；暖色强调色下会变成一圈浅橙红，看起来像轨道渗色。 */
+ok("白瓷环壁是中性色，不跟强调色走",
+  I.knobRingOf({ knobShape: "rounded", knobFill: "white" }, I.paletteOf("#F2784B")) === "#dde3ec");
+ok("染色 / 强调色珠 / 磨砂的环壁仍跟各自质感走", (function () {
+  var pal = I.paletteOf("#F2784B");
+  return I.knobRingOf({ knobShape: "circle", knobFill: "tinted" }, pal) === pal.stops[2]
+    && I.knobRingOf({ knobShape: "circle", knobFill: "accent" }, pal) === pal.stops[3]
+    && I.knobRingOf({ knobShape: "circle", knobFill: "frosted" }, pal) === "#c3cad6";
+})());
 ok("最高档字符默认跟随强调色", I.tintColorOf({ accent: "#4A84FF", tintMode: "accent" }) === "#4A84FF");
 ok("最高档字符可独立指定", I.tintColorOf({ tintMode: "custom", tintColor: "#E8B33C" }) === "#E8B33C");
 ok("改设置立即写回快照", (() => {
@@ -722,50 +749,56 @@ ok("接近终点时速度已经收住（不是硬刹）", (function () {
     I.settleAt(0.3, 0.333, 0, 0.25 + e) - I.settleAt(0.3, 0.333, 0, 0.25)) / e;
   return peak > 0.1 && vNear < peak * 0.25;
 })());
-ok("吸附不再依赖 CSS 动画（改由 rAF 逐帧驱动）", !/demKnobPop/.test(I.CSS));
+ok("拖动吸附仍由 rAF 逐帧驱动（不是 CSS 过渡）",
+  /s\.raf = window\.requestAnimationFrame\(step\)/.test(SRC));
 ok("填充与滑块共用同一条过渡时长", /\.dem-fill\{[^}]*transition:width \.3s/.test(I.CSS)
   && /\.dem-knob\{[^}]*transition:left \.3s/.test(I.CSS));
+/* 粒子墙只能逐帧写容器宽度；若同时写 .dem-fill.style.width，会把每条
+   CSS width 过渡的目标每帧重设到滑块当前位置，填充永远追在滑块后面。 */
+ok("粒子墙不再覆写填充宽度（避免拖住 .3s 过渡）",
+  !/fillRef2/.test(SRC) && /host\.style\.width = w\.toFixed\(2\)/.test(SRC));
+ok("切换轨道风格会重建粒子墙",
+  /\[width, count, liveSettings\.railStyle\]/.test(SRC)
+    && /liveSettings\.railStyle === "codex"/.test(SRC));
 
-/* ── 点击落档（方案 B）──
-   点击不再"先跳到指针再滑回来"：判最近档后，从滑块当前位置用一条更柔的
-   临界阻尼曲线滑过去（TAP_OMEGA），起手 0 速度、全程不过冲。 */
-ok("点击用的角频率比松手吸附更柔", I.TAP_OMEGA > 0 && I.TAP_OMEGA < I.SETTLE_OMEGA,
-  String(I.TAP_OMEGA));
+/* ── 点击 / 键盘换档（方案 A）──
+   判最近档后，从滑块当前 DOM 位置用 CSS `left / width .3s` 平滑过去；
+   不跑弹簧曲线、不做 rAF 收尾，所以不会在档位前"顿一下"。 */
 ok("点击/拖动的判定阈值是 5px", I.TAP_SLOP === 5, String(I.TAP_SLOP));
+ok("点击落档走 CSS 过渡（不再起弹簧）",
+  /now\.landByCss\(tapTo\)/.test(SRC) && !/beginSettle\(pctOfIndex\(tapTo/.test(SRC));
+ok("键盘换档也走 CSS 过渡",
+  /now\.landByCss\(next\)/.test(SRC) && !/beginSettle\(pctOfIndex\(next/.test(SRC));
+/* 点击的第一帧不能等 React 提交：landByCss 先把目标像素同步写到旋钮和填充，
+   两者一起起过渡；否则第一帧还在旧位置，就是"点了没动/慢半拍"。 */
+ok("点击落档在 pointerup 同帧写目标像素（不等待 React 提交）",
+  /function writeTargetPct/.test(SRC)
+  && /knob\.style\.setProperty\("--dem-knob-x"/.test(SRC)
+  && /fill\.style\.width = fillPx/.test(SRC)
+  && /function landByCss\(target\)[\s\S]*?writeTargetPct\(pctOfIndex\(target, count\)\)/.test(SRC));
+/* 宿主 access.select 是同步桥，写完会停渲染线程 0.1–0.3s；不能和换档同一帧执行。 */
+ok("点击/键盘的宿主写入延后 360ms，避开滑块动画",
+  /var CLICK_COMMIT_MS = 360/.test(SRC)
+  && /now\.onPick\(tapTo, true, CLICK_COMMIT_MS\)/.test(SRC)
+  && /now\.onPick\(next, true, CLICK_COMMIT_MS\)/.test(SRC));
+ok("延后的宿主写入等到渲染线程空闲再落库",
+  /requestIdleCallback\(commit, \{ timeout: 900 \}\)/.test(SRC)
+  && /cancelIdleCallback/.test(SRC));
+ok("新的点击/拖动会取消上一档的延迟写入",
+  /function cancelPendingPick/.test(SRC)
+  && /now\.cancelPendingPick\(\)/.test(SRC)
+  && /cancelPendingPick: props\.onCancelPick/.test(SRC));
 ok("settleAt 接受自定义角频率", (function () {
-  const soft = I.settleAt(0.2, 0.667, 0, 0.12, I.TAP_OMEGA);
+  const soft = I.settleAt(0.2, 0.667, 0, 0.12, I.SETTLE_OMEGA / 2);
   const firm = I.settleAt(0.2, 0.667, 0, 0.12, I.SETTLE_OMEGA);
   /* 同一时刻，更柔的那条走得少一点（离起点更近） */
   return Math.abs(soft - 0.2) < Math.abs(firm - 0.2);
 })());
-ok("点击曲线从当前位置起步（不经过指针）", Math.abs(I.settleAt(0.333, 0.667, 0, 0, I.TAP_OMEGA) - 0.333) < 1e-9);
-ok("点击曲线不过冲、单调靠近目标", (function () {
-  const from = 0.334;
-  const to = 0.667;
-  let prev = from;
-  for (let t = 0; t <= 0.46; t += 0.004) {
-    const x = I.settleAt(from, to, 0, t, I.TAP_OMEGA);
-    if (x < prev - 1e-9 || x > to + 1e-9) return false;
-    prev = x;
-  }
-  return true;
-})());
-ok("点击曲线 340ms 内走完九成五", (function () {
-  const x = I.settleAt(0.334, 0.667, 0, 0.34, I.TAP_OMEGA);
-  return (x - 0.334) / (0.667 - 0.334) > 0.95;
-})(), I.settleAt(0.334, 0.667, 0, 0.34, I.TAP_OMEGA).toFixed(4));
-ok("点击曲线起手速度为 0（不会先窜出去）", (function () {
-  const e = 1e-4;
-  const v = (I.settleAt(0.334, 0.667, 0, e, I.TAP_OMEGA) - 0.334) / e;
-  return v < 0.2;
-})());
 /* 收尾时间按 9.5/ω 算：到那一刻残余必须小于 0.1% 的行程，否则会"啪"地贴上档位 */
 ok("收尾时刻残余小于 0.1%（不会硬贴上去）", (function () {
   const from = 0, to = 1;
-  return [I.TAP_OMEGA, I.SETTLE_OMEGA].every(function (w) {
-    const t = Math.min(0.62, 9.5 / w);
-    return Math.abs(I.settleAt(from, to, 0, t, w) - to) < 0.001;
-  });
+  const t = Math.min(0.62, 9.5 / I.SETTLE_OMEGA);
+  return Math.abs(I.settleAt(from, to, 0, t, I.SETTLE_OMEGA) - to) < 0.001;
 })());
 /* 结构断言：回弹感的来源是"按下就跳到指针处"，这段源码里不该再出现 setDragPct */
 ok("按下不移动滑块（先跳后回的来源已移除）", (function () {
@@ -773,8 +806,37 @@ ok("按下不移动滑块（先跳后回的来源已移除）", (function () {
   const b = SRC.indexOf("function onPointerMove");
   return a > 0 && b > a && !/setDragPct/.test(SRC.slice(a, b));
 })());
-ok("点击落档以 TAP_OMEGA 起吸附", /beginSettle\(pctOfIndex\(tapTo[^)]*\),\s*0,\s*TAP_OMEGA\)/.test(SRC));
-ok("拖动松手仍接住指针初速", /beginSettle\(pctOfIndex\(target, now\.count\), speed\)/.test(SRC));
+ok("拖动松手仍接住指针初速", /beginSettle\(pctOfIndex\(target, now\.count\), speed, undefined, pct\)/.test(SRC));
+/* 松手瞬间的指针位置比 React 上一帧的 shownPct 新；拿旧位置当起点会在
+   "已经看着到档"之后又往右补一小段。四参数版本必须显式传 pct。 */
+ok("松手起点用最新指针位置（不回填旧渲染位置）",
+  /beginSettle\(pctOfIndex\(target, now\.count\), speed, undefined, pct\)/.test(SRC)
+  && /beginSettle\(to, v0, omega, fromOverride\)/.test(SRC));
+/* 霓虹端头点亮必须真的到 1：0.97 在 272px 行程上还差 8px，烟花会先炸、滑块再追。 */
+ok("霓虹端头只在精确 1 点亮（0.97 不再提前）",
+  /if \(pct >= 0\.9995\)/.test(SRC) && SRC.indexOf("if (pct >= 0.97)") === -1);
+/* 填充收口不能再被霓虹覆盖成 mask:none；用填充自身宽度反推圆心，过渡期也跟手。 */
+ok("霓虹填充恢复收口遮罩（不再铺到滑块外缘）",
+  /\.dem-track\[data-rail='codex'\] \.dem-fill\{[^}]*--dem-fill-tail-x:calc\(100% - var\(--dem-knob-tail-inset/.test(I.CSS)
+  && !/\.dem-track\[data-rail='codex'\] \.dem-fill\{[^}]*mask-image:none/.test(I.CSS));
+/* 端点严格内切：pct=1 时滑块右缘正好贴住轨道宽，不再多出 1px 蓝边。 */
+ok("端点严格内切（不再 +2 / −1 出界）",
+  SRC.indexOf("var travelPx = Math.max(0, width - knobW);") !== -1
+  && SRC.indexOf("var fillPx = knobW + travelPx * shownPct;") !== -1
+  && SRC.indexOf("var knobPx = (knobW / 2) + travelPx * shownPct;") !== -1);
+/* 收尾时 data-snapping 必须撑到最终位置提交之后，否则残余会被 CSS 过渡再播一遍。 */
+ok("落位后的 CSS 过渡在下一帧才恢复",
+  /window\.requestAnimationFrame\(function \(\) \{ mark\(false\); \}\);/.test(SRC)
+  && SRC.indexOf("setSettlePct(null);\n            mark(false);") === -1);
+/* 两种轨道的手感只能维护一份：beginSettle 里不许再按 railStyle 分支。 */
+ok("粒子轨与霓虹轨共用同一条吸附曲线", (function () {
+  var start = SRC.indexOf("function beginSettle");
+  var end = SRC.indexOf("function step", start);
+  if (start < 0 || end < 0) return false;
+  return SRC.slice(start, end).indexOf("railStyle") === -1;
+})());
+ok("松手正好在档位时先定格再恢复过渡",
+  /if \(!reduceMotion\) mark\(true\);\s*setSettlePct\(null\);/.test(SRC));
 /* ── 点亮时机：切到最高档时，动画必须等滑块落位，不能抢在滑块前面 ── */
 ok("点亮排队到落位，收尾时兑现", (function () {
   var def = /function flushPendingBurst\(\)/.test(SRC);
@@ -783,8 +845,11 @@ ok("点亮排队到落位，收尾时兑现", (function () {
 })());
 ok("切档处理器不再直接播点亮", (SRC.match(/now\.fireBurst\(\)/g) || []).length === 1,
   String((SRC.match(/now\.fireBurst\(\)/g) || []).length));
-ok("点击 / 松手 / 键盘三条路径都只是排队", (SRC.match(/now\.armBurstOnLand\(\)/g) || []).length === 3,
-  String((SRC.match(/now\.armBurstOnLand\(\)/g) || []).length));
+ok("点击 / 松手 / 键盘都把点亮排到落位", (function () {
+  var arm = (SRC.match(/now\.armBurstOnLand\(\)/g) || []).length;
+  var css = (SRC.match(/now\.landByCss\(/g) || []).length;
+  return arm >= 1 && css === 2;
+})(), (SRC.match(/now\.armBurstOnLand\(\)/g) || []).length + "/" + (SRC.match(/now\.landByCss\(/g) || []).length);
 ok("落位前 shownIndex 副作用让位给吸附", /settleRef\.current !== null \|\| burstPendingRef\.current/.test(SRC));
 ok("重新按住会丢弃未兑现的点亮", /dropPendingBurst/.test(SRC));
 
