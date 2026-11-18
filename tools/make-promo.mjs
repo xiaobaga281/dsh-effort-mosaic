@@ -1,13 +1,15 @@
 /**
- * 生成 README 的两张宣传图。用的是 lib/client.js 导出的**真实 CSS**、真实调色板、
+ * 生成 README 的三张宣传图。用的是 lib/client.js 导出的**真实 CSS**、真实调色板、
  * 真实散射公式，所以图和真机是同一套观感；改了视觉参数就重跑一次。
  *
- *   node tools/make-promo.mjs            # 在仓库根目录执行，输出系统临时目录 dsh-effort-mosaic-promo/{hero,shapes}.html
+ *   node tools/make-promo.mjs            # 输出系统临时目录 dsh-effort-mosaic-promo/{hero,shapes,neon}.html
  *   # 再用浏览器无头截图（Edge / Chrome 都可以）：
  *   msedge --headless=new --force-device-scale-factor=1.5 --window-size=1200,630 \
  *          --screenshot=docs/hero.png  file:///<temp>/dsh-effort-mosaic-promo/hero.html
  *   msedge --headless=new --force-device-scale-factor=2   --window-size=1200,172 \
  *          --screenshot=docs/shapes.png file:///<temp>/dsh-effort-mosaic-promo/shapes.html
+ *   msedge --headless=new --force-device-scale-factor=1.5 --window-size=1200,430 \
+ *          --screenshot=docs/neon.png  file:///<temp>/dsh-effort-mosaic-promo/neon.html
  */
 import { pathToFileURL } from "node:url";
 import fs from "node:fs";
@@ -139,6 +141,55 @@ function track(opts) {
     + "</div></div>";
 }
 
+/** 霓虹的漂流白点：数量、变量名与真机 `CODEX_DUST` 一致。 */
+function neonDustHtml() {
+  let out = "";
+  for (let i = 0; i < 14; i += 1) {
+    out += '<i style="--y:' + (18 + 64 * rnd(i, 23)).toFixed(1)
+      + '%;--o:' + (0.4 + 0.6 * rnd(i, 11)).toFixed(2)
+      + ';--s:' + (0.7 + 0.35 * rnd(i, 12)).toFixed(2)
+      + ';--dur:' + (1.6 * (0.8 + 1.2 * rnd(i, 7))).toFixed(2)
+      + 's;--delay:' + (-1.6 * rnd(i, 5)).toFixed(2) + 's"></i>';
+  }
+  return out;
+}
+
+/** 霓虹轨道：真实 CSS + 真实蓝紫渐变；最高档静态展开成擦除完成态。 */
+function neonTrack(opts) {
+  const o = Object.assign({ width: 1072, pct: 1, size: 34 }, opts);
+  const knobW = I.knobWidthOf({ knobShape: "circle", knobSize: o.size });
+  const travel = Math.max(0, o.width - knobW);
+  const cx = knobW / 2 + travel * o.pct;
+  const fillW = cx + knobW / 2;
+  const max = o.pct >= 1 ? "1" : "0";
+  const vars = [
+    "--dem-accent:" + pal.accent,
+    "--dem-accent-rgb:" + ACCENT,
+    "--dem-c1:" + pal.stops[0], "--dem-c2:" + pal.stops[1],
+    "--dem-c3:" + pal.stops[2], "--dem-c4:" + pal.stops[3],
+    "--dem-neon-gradient:" + I.neonGradientOf("#4A84FF"),
+    "--dem-knob-size:" + o.size + "px",
+    "--dem-knob-w:" + knobW + "px",
+    "--dem-knob-r:" + (knobW / 2) + "px",
+    "--dem-knob-radius:" + I.knobRadiusOf({ knobShape: "circle", knobSize: o.size }),
+    "--dem-knob-fill:" + I.knobSurfaceOf({ knobShape: "circle", knobFill: "white" }, pal),
+    "--dem-fill-h:30px",
+    "--dem-band-inset:0px",
+    "--dem-fill-tail-x:" + cx.toFixed(2) + "px",
+    "--dem-fill-tail-radius:" + (knobW / 2 - 1) + "px",
+    "--dem-slot-bg:rgba(255,255,255,.10)",
+  ].join(";");
+  return '<div class="stage-vars" style="' + vars + '">'
+    + '<div class="dem-track" data-rail="codex" data-max="' + max
+    + '" data-measured="1" data-burst="0" data-burst-style="scan" style="width:' + o.width + 'px">'
+    + '<div class="dem-fill" style="width:' + fillW.toFixed(2) + 'px">'
+    + '<div class="dem-codex"><div class="dem-codex-grad"></div><div class="dem-codex-glow"></div>'
+    + '<div class="dem-codex-wipe" data-run="static"></div>'
+    + '<div class="dem-codex-dust">' + neonDustHtml() + "</div></div></div>"
+    + '<div class="dem-knob" style="--dem-knob-x:' + cx.toFixed(2) + 'px"></div>'
+    + "</div></div>";
+}
+
 /* 5×5 的马赛克角标：中心实、外圈虚，和轨道同一套色 */
 let markHtml = "";
 for (let y = 0; y < 5; y += 1) {
@@ -218,6 +269,65 @@ h1{margin:14px 0 0;font-size:46px;line-height:1.05;letter-spacing:-.015em;font-w
 <div class="badge"><b>4 档 · 5 形 · 4 动效</b><span>零依赖 · 无构建 · MIT</span></div>
 </body></html>`;
 
+/* ────────────────────────────── 霓虹主视觉 ────────────────────────────── */
+const neon = `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<style>${CSS}</style>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{width:1200px;height:430px;overflow:hidden;background:#080b11;color:#e9eefb;
+  font-family:-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;-webkit-font-smoothing:antialiased;position:relative}
+.bg{position:absolute;inset:0;
+  background:
+    radial-gradient(760px 360px at 74% 42%, rgba(88,73,255,.34), rgba(88,73,255,0) 68%),
+    radial-gradient(520px 280px at 20% 92%, rgba(74,132,255,.16), rgba(74,132,255,0) 72%),
+    linear-gradient(180deg,#0a0e18 0%,#080b11 64%,#070a10 100%)}
+.grid{position:absolute;inset:0;opacity:.45;
+  background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);
+  background-size:40px 40px;
+  -webkit-mask-image:radial-gradient(720px 330px at 50% 46%,#000 0%,transparent 78%);
+  mask-image:radial-gradient(720px 330px at 50% 46%,#000 0%,transparent 78%)}
+.wrap{position:absolute;left:64px;top:38px;right:64px}
+.kicker{font-size:11.5px;letter-spacing:.22em;color:#7b8aa4;font-weight:600}
+h1{margin:10px 0 0;font-size:40px;line-height:1.05;letter-spacing:-.02em;font-weight:680;
+  background:linear-gradient(92deg,#ffffff 8%,#d6d2ff 54%,#9d8cff 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+.tag{margin:10px 0 0;font-size:15px;color:#a0aac2;letter-spacing:.01em}
+.chips{display:flex;gap:8px;margin-top:16px}
+.chip{font-size:11.5px;color:#c4c9ee;padding:5px 11px;border-radius:999px;
+  border:1px solid rgba(150,140,255,.28);background:rgba(110,90,255,.12)}
+.stage{position:absolute;left:64px;right:64px;top:196px}
+.stage .stage-vars{display:block}
+.stage .dem-track{margin:0 auto}
+.scale{display:flex;justify-content:space-between;margin:14px 2px 0;padding:0 6px;
+  font-size:11px;color:#7b819b;letter-spacing:.07em}
+.caption{display:flex;justify-content:space-between;margin:14px 4px 0;font-size:11px;color:#727f99}
+.caption b{color:#b7a9ff;font-weight:600}
+.neon-glow{position:absolute;left:28px;right:28px;top:-28px;height:110px;pointer-events:none;
+  background:radial-gradient(60% 100% at 50% 50%,rgba(113,92,255,.20),rgba(113,92,255,0) 72%);filter:blur(7px)}
+.foot{position:absolute;left:64px;bottom:26px;display:flex;align-items:center;gap:14px;
+  font-size:12px;color:#727f99}
+.dot{width:5px;height:5px;border-radius:50%;background:#8d7bff;box-shadow:0 0 10px 2px rgba(125,102,255,.8)}
+.badge{position:absolute;right:64px;bottom:24px;text-align:right}
+.badge b{display:block;font-size:24px;color:#dedaff;font-weight:650;letter-spacing:-.01em}
+.badge span{font-size:11.5px;color:#7d7f9a}
+</style></head><body>
+<div class="bg"></div><div class="grid"></div>
+<div class="wrap">
+  <div class="kicker">DEEPSEEK HARNESS · PLUGIN</div>
+  <h1>霓虹轨道</h1>
+  <p class="tag">平涂强调色轨道；最高档擦出蓝 → 紫渐变，滑块脚下同时炸开一圈火星。</p>
+  <div class="chips"><span class="chip">蓝紫擦除</span><span class="chip">14 颗漂流白点</span><span class="chip">4 套点亮动画</span><span class="chip">5 形滑块</span></div>
+</div>
+<div class="stage"><div class="neon-glow"></div>${neonTrack({ width: 1072, pct: 1, size: 34 })}
+  <div class="scale"><span>Off</span><span>Low</span><span>High</span><span>Max</span></div>
+  <div class="caption"><span>低档：平涂强调色</span><b>最高档：蓝 → 紫擦除渐变</b><span>拖动 / 点击都跟手</span></div>
+</div>
+<div class="foot"><span class="dot"></span><span>github.com/xiaobaga281/dsh-effort-mosaic</span></div>
+<div class="badge"><b>霓虹 · MAX</b><span>零依赖 · 无构建 · MIT</span></div>
+</body></html>`;
+
 /* ────────────────────────────── 五种滑块 ────────────────────────────── */
 const shapeDefs = [
   ["circle", "圆", 30],
@@ -259,5 +369,6 @@ const OUT = path.join(os.tmpdir(), "dsh-effort-mosaic-promo");
 fs.mkdirSync(OUT, { recursive: true });
 fs.writeFileSync(OUT + "/hero.html", hero);
 fs.writeFileSync(OUT + "/shapes.html", shapes);
-console.log("written", OUT + "/hero.html", "and", OUT + "/shapes.html");
-console.log("next: screenshot 1200x630 @1.5x -> docs/hero.png, 1200x172 @2x -> docs/shapes.png");
+fs.writeFileSync(OUT + "/neon.html", neon);
+console.log("written", OUT + "/hero.html", OUT + "/shapes.html", "and", OUT + "/neon.html");
+console.log("next: screenshot 1200x630 @1.5x -> docs/hero.png, 1200x172 @2x -> docs/shapes.png, 1200x430 @1.5x -> docs/neon.png");

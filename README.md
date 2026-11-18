@@ -17,6 +17,10 @@
 
 **霓虹** —— 平涂强调色的胶囊轨道；切到最高档时，一块同色蓝盖板向左退场，把蓝→紫的整条渐变「擦」出来，同时滑块脚下炸一圈火星、14 颗白点由右向左漂过。白点直径 3px，火星 2.8–5.2px，比初版大一圈，远看不再像灰尘。
 
+<p align="center">
+  <img src="https://cdn.jsdelivr.net/gh/xiaobaga281/dsh-effort-mosaic@main/docs/neon.png" alt="霓虹轨道：平涂强调色，最高档蓝到紫擦除渐变" width="100%">
+</p>
+
 - **看得见强度** —— 一条连续轨道比 Off / Low / High / Max 四个字直观
 - **手感连续** —— 拖动跟手不跳档；松手按临界阻尼收口；点击只判最近档位，不先跳到指针
 - **最高档有代价感** —— 马赛克默认只有开满时粒子才飞出轨道，四套越界动画；霓虹是擦除 + 烟花
@@ -133,7 +137,7 @@ dsh plugin --profile web add "github:xiaobaga281/dsh-effort-mosaic"
 
 ```sh
 npm test                   # 170 项离线断言（桩件里真跑 bundle）
-node tools/make-promo.mjs  # 重新生成 docs/ 下两张宣传图（真实 CSS 渲染）
+node tools/make-promo.mjs  # 重新生成 docs/ 下三张宣传图（真实 CSS 渲染）
 ```
 
 ```
@@ -156,6 +160,7 @@ README.md / LICENSE  说明与许可
 
 完整记录见 [CHANGELOG.md](./CHANGELOG.md)。
 
+- **1.1.5** — 文档维护：新增霓虹轨道宣传图（真实 CSS 渲染），补齐 npm `homepage` / `bugs` 元数据；无运行时变化。
 - **1.1.4** — 修复白瓷旋钮边缘仍残留 1px 轨道色；粒子轨填充不再被 rAF 每帧覆写，切换轨道风格会重建粒子墙；补齐点击/拖动与色轨同步、档位吸附、精确端头点亮和霓虹粒子尺寸。
 - **1.1.3** — 修复关闭浮窗后轨道消失、每次打开从最左端划到真实档位；测试接口不再进入正式 bundle。
 - **1.1.2** — 菜单关闭时保留挂载，切档后再开可复用。
