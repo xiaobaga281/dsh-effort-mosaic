@@ -496,6 +496,10 @@ ok("霓虹擦除带软边（渐变终点收到全透明，不能留半透明蓝�
 ok("霓虹最高档落位先保持蓝盖板，擦除不先露整层彩色",
   I.CSS.indexOf("[data-run='hold']") !== -1
   && SRC.indexOf('burstArmedRef.current ? "static" : "hold"') !== -1);
+/* 光晕进入要跟手，退出要走慢呼吸；两边不能共用同一个 .18s。 */
+ok("最高档光晕退出走慢呼吸，不是直接归零",
+  I.CSS.indexOf("transition:opacity 1.05s cubic-bezier(.37,0,.22,1)") !== -1
+  && I.CSS.indexOf(".dem-track[data-burst='1'] .dem-knob::after{opacity:1;transition:opacity .16s ease-out}") !== -1);
 /* 霓虹粒子原来只有 2px / 2–4.4px，视觉上像灰尘；现在尘埃 3px、火星 2.8–5.2px。 */
 ok("霓虹尘埃粒子已放大到 3px",
   /\.dem-codex-dust i::before\{[^}]*width:3px;height:3px/.test(I.CSS));
