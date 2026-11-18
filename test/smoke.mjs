@@ -880,6 +880,13 @@ ok("点击 / 松手 / 键盘都把点亮排到落位", (function () {
 ok("落位前 shownIndex 副作用让位给吸附", /settleRef\.current !== null \|\| burstPendingRef\.current/.test(SRC));
 ok("重新按住会丢弃未兑现的点亮", /dropPendingBurst/.test(SRC));
 
+/* ── 市场元数据 ── */
+const PKG = JSON.parse(fs.readFileSync(resolve(HERE, "../package.json"), "utf8"));
+const SHOTS = JSON.parse(fs.readFileSync(resolve(HERE, "../screenshots.json"), "utf8"));
+ok("声明 GitHub 托管的插件截图", Array.isArray(SHOTS) && SHOTS.length >= 1 && SHOTS.every(
+  (p) => typeof p === "string" && p.startsWith("docs/") && fs.existsSync(resolve(HERE, "..", p))));
+ok("声明 DSH 宿主要求，避免市场显示未知", typeof PKG.engines?.dsh === "string" && PKG.engines.dsh.includes("0.3.0"));
+
 /* ── 报告 ── */
 if (fails.length === 0) {
   console.log(`OK  ${pass} 项全部通过`);

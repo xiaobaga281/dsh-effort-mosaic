@@ -136,7 +136,7 @@ dsh plugin --profile web add "github:xiaobaga281/dsh-effort-mosaic"
 ## 开发
 
 ```sh
-npm test                   # 175 项离线断言（桩件里真跑 bundle）
+npm test                   # 177 项离线断言（桩件里真跑 bundle）
 node tools/make-promo.mjs  # 重新生成 docs/ 下三张宣传图（真实 CSS 渲染）
 ```
 
@@ -160,6 +160,7 @@ README.md / LICENSE  说明与许可
 
 完整记录见 [CHANGELOG.md](./CHANGELOG.md)。
 
+- **1.1.9** — 补充 `screenshots.json` 与 `engines.dsh`，修复插件市场介绍页无截图、宿主要求显示未知。
 - **1.1.8** — 修复最高档滑块光晕熄灭太直接：进入保持快，退出改为 1.05s 呼吸式衰减；粒子和霓虹同时生效。
 - **1.1.7** — 修复霓虹最高档先露整条紫色、再播擦除的问题：落位后蓝盖板先满覆盖，点火时再从 0 向左退，只擦一次。
 - **1.1.6** — 修复最高档滑块右缘的橙色直角：遮罩改为填充/粒子层本地解析，右端圆角取滑块外缘；修复打开浮层时从 0 档划到真实档位。
