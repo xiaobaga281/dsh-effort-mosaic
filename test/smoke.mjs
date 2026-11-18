@@ -492,6 +492,10 @@ ok("霓虹风格样式已注入（平涂轨道 / 擦除 / 烟花）",
   && I.CSS.indexOf(".dem-codex-fw i") !== -1);
 ok("霓虹擦除带软边（渐变终点收到全透明，不能留半透明蓝边）",
   /\.dem-codex-wipe\{[^}]*rgba\(0,0,0,0\) 100%/.test(I.CSS));
+/* 落位到最高档时，擦除盖板必须先满覆盖；否则紫色渐变层会先露整条，再被盖板擦一遍。 */
+ok("霓虹最高档落位先保持蓝盖板，擦除不先露整层彩色",
+  I.CSS.indexOf("[data-run='hold']") !== -1
+  && SRC.indexOf('burstArmedRef.current ? "static" : "hold"') !== -1);
 /* 霓虹粒子原来只有 2px / 2–4.4px，视觉上像灰尘；现在尘埃 3px、火星 2.8–5.2px。 */
 ok("霓虹尘埃粒子已放大到 3px",
   /\.dem-codex-dust i::before\{[^}]*width:3px;height:3px/.test(I.CSS));
