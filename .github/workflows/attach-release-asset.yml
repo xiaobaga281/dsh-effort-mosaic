@@ -19,4 +19,11 @@ jobs:
       - name: Upload asset
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload v1.1.9 dsh-effort-mosaic.tgz --clobber
+        run: |
+          curl -fsSL -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            -H "Content-Type: application/octet-stream" \
+            --data-binary @dsh-effort-mosaic.tgz \
+            "https://uploads.github.com/repos/xiaobaga281/dsh-effort-mosaic/releases/449924572/assets?name=dsh-effort-mosaic.tgz"
