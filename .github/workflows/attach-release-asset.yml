@@ -1,0 +1,22 @@
+name: Attach release tarball
+
+on:
+  push:
+    paths:
+      - .github/workflows/attach-release-asset.yml
+
+permissions:
+  contents: write
+
+jobs:
+  attach:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download npm package
+        run: |
+          curl -fsSL -o dsh-effort-mosaic.tgz https://registry.npmjs.org/dsh-effort-mosaic/-/dsh-effort-mosaic-1.1.9.tgz
+          ls -l dsh-effort-mosaic.tgz
+      - name: Upload asset
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload v1.1.9 dsh-effort-mosaic.tgz --clobber
