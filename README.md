@@ -1,10 +1,6 @@
 # dsh-effort-mosaic
 
 <p align="center">
-  <img src="https://cdn.jsdelivr.net/gh/xiaobaga281/dsh-effort-mosaic@main/docs/hero.png" alt="一条像素马赛克粒子滑轨：右端是静止的墙，向左逐渐散开" width="100%">
-</p>
-
-<p align="center">
   <a href="https://github.com/xiaobaga281/dsh-effort-mosaic/releases/latest"><img src="https://img.shields.io/github/v/release/xiaobaga281/dsh-effort-mosaic?color=4a84ff&label=release" alt="release"></a>
   <a href="https://github.com/xiaobaga281/dsh-effort-mosaic/blob/main/LICENSE"><img src="https://img.shields.io/github/license/xiaobaga281/dsh-effort-mosaic?color=4a84ff" alt="license"></a>
   <img src="https://img.shields.io/badge/platform-DSH%20Desktop-4a84ff" alt="platform">
@@ -17,11 +13,8 @@
 
 **霓虹** —— 平涂强调色的胶囊轨道；切到最高档时，一块同色蓝盖板向左退场，把蓝→紫的整条渐变「擦」出来，同时滑块脚下炸一圈火星、14 颗白点由右向左漂过。白点直径 3px，火星 2.8–5.2px，比初版大一圈，远看不再像灰尘。
 
-<p align="center">
-  <img src="https://cdn.jsdelivr.net/gh/xiaobaga281/dsh-effort-mosaic@main/docs/neon.png" alt="霓虹轨道：平涂强调色，最高档蓝到紫擦除渐变" width="100%">
-</p>
-
 - **看得见强度** —— 一条连续轨道比 Off / Low / High / Max 四个字直观
+- **苹果式液态玻璃 + 端点弹性** —— 透明玻璃壁、边缘镜面和背景 blur；横向中段静止，纵向上下拖可拉高/压扁，越过端点才做横向回弹
 - **手感连续** —— 拖动跟手不跳档；松手按临界阻尼收口；点击只判最近档位，不先跳到指针
 - **最高档有代价感** —— 马赛克默认只有开满时粒子才飞出轨道，四套越界动画；霓虹是擦除 + 烟花
 - **可调到底** —— 5 种滑块 × 2 档尺寸 × 4 种填充，颜色与幅度都能改
@@ -52,23 +45,21 @@ dsh plugin --profile web add "github:xiaobaga281/dsh-effort-mosaic"
 
 | 操作 | 行为 |
 |---|---|
-| 按住拖动 | 两档之间完全自由跟手（横向超过 5px 才算拖动，之前滑块一像素不动） |
+| 按住拖动 | 两档之间完全自由跟手（平面距离超过 5px 才算拖动，之前滑块一像素不动）；横向中段轨道不形变，纵向上下拖可拉高/压扁 |
+| 拖过端点 | 滑块到 0 / 最高档后继续外拉，轨道玻璃、色带、粒子与滑块一起弹性拉伸；锚点贴在滑块这一侧，轨道不会越过滑块外沿 |
+| 纵向拖动 | 以按下点为基准上下拉，纵向位移超过约 2px 且以纵向为主时生效，中段也响应；形变和粒子统一裁在宿主浮层内 |
 | 松手 | 吸附到最近档位，约 0.25s；松手位置正好在档位上时不动，不再向右补一段 |
 | 点击轨道 | 判定离指针最近的档位；pointerup 同帧把目标像素写到旋钮和填充，滑块立即起 `.3s` CSS 过渡，不等待 React 提交 |
 | `←` `→` `↑` `↓` / `Home` `End` | 相邻档位 / 首尾档，同样走 `.3s` CSS 过渡 |
-| 档位落库 | 点击/键盘的宿主写入延后 360ms，并在渲染线程空闲时执行；连续换档只保留最后一次目标，点完立刻关浮窗也会在卸载时补写 |
+| 档位落库 | 视觉落位同一帧先改官方字符 + 乐观 draft；宿主写入再让出两帧，排队到渲染空闲才执行；连续换档只保留最后目标，关浮窗前未落库会补写 |
 
-拖动只改本地显示位置，松手那一下才写回官方设置（120ms 节流，失败自动回滚）。**拖动松手仍走同一条临界阻尼吸附曲线**（保留指尖初速）；**点击 / 键盘换档走同一条 `.3s` CSS 过渡**（离散操作，平滑到位即可）。点击的 pointerup 同帧会把目标像素直接写进 DOM，宿主档位则延后 360ms、等渲染线程空闲再落库，避免同步桥堵住第一帧；连续换档只保留最后一次目标。两种轨道共用这两条路径 —— 以后调手感只改一处，粒子轨和霓虹轨一起变。切到最高档时，点亮动画等滑块滑到位再播。
+拖动只改本地显示位置，松手进入临界阻尼吸附；**点击 / 键盘换档走 `.3s` CSS 过渡**（离散操作，平滑到位即可）。两条路径的落位帧都汇入同一套「无感引擎」：先把官方行 / 输入胶囊里的档位字符、最高档染色和 draft 一起切到目标，再让出两帧、等渲染线程空闲才进宿主同步桥。于是滑块到位、字符切换、宿主落库三层解耦 —— 用户看到的是同步切换，同步桥的 0.1–0.3s 停顿则被挪到动画结束之后。写入失败时 draft 清空，字符与染色随 effect 回滚到真实档位。两种轨道共用这两条路径 —— 以后调手感只改一处，粒子轨和霓虹轨一起变。切到最高档时，点亮动画等滑块滑到位再播。
 
 ## 视觉
 
 一条 30px 高的胶囊凹槽，自下而上叠四层：填充渐变 → 6 行 × 5px 粒子 → 刻度 → 滑块。填充、粒子、凹槽共用同一条轮廓：右端按滑块内缘收口，带高跟随滑块（`min(30, 滑块高)`），接缝处不会露出蓝边。
 
 粒子按离滑块的距离决定散开程度：右侧 2% 是严格贴网格的墙，往左 `amp` 增大、漂移与抖动随之变大，最左端几乎全部脱离。颜色取自同一条渐变色阶 × 明度系数（0.80–1.06），砖缝从浅蓝到纯蓝都看得清。
-
-<p align="center">
-  <img src="https://cdn.jsdelivr.net/gh/xiaobaga281/dsh-effort-mosaic@main/docs/shapes.png" alt="五种滑块：圆 / 环 / 方形 / 胶囊 / 细棒" width="100%">
-</p>
 
 **四种点亮动画**（最高档触发，两套风格都有）：能量波 / 扫描线 / 爆散 / 呼吸。马赛克那组还带一次粒子瞬时提速；霓虹沿用同一套语义，但峰值更低（紫渐变的亮度天花板比浅蓝低，1.55 倍会烧成白块），且不做饱和变化。
 
@@ -78,11 +69,13 @@ dsh plugin --profile web add "github:xiaobaga281/dsh-effort-mosaic"
 
 ## 自定义版式
 
-插件详情页里有一块面板，改任何一项即时生效（顶部缩略轨道会跟着变，旁边可「播放」一遍点亮）。
+插件详情页里有一块面板，预览直接使用正式的三档轨道（Off / Medium / Max），可以拖动、点击、键盘切换；改任何一项即时生效，最高档字符按当前染色设置显示，旁边可「播放」重播一次点亮。打开「拖拽动效」开关时会自动演示一次端点 / 纵向形变，不用真的去拖也能看出差别。越界选「全档位」会把预览自动停到 Medium、选「最高档」停回 Max，两种模式当场就能对上画面。点击预览轨道时，档位字符等滑块 `.3s` 过渡收口后再切换，不会在滑块还在走的时候提前跳字。预览的粒子遮罩变量完全由每帧的 `syncTail` 按真实滑块位置写，点击瞬间不会再先跳到目标档位；粒子边缘也按滑块内缘连续裁切，不按 5px 整格淘汰，从 Max 切到 Medium 时右缘不会闪一下或一格一格地空/满跳。
 
 | 项 | 取值 | 默认 |
 |---|---|---|
 | 轨道风格 | 马赛克 / 霓虹 | 马赛克 |
+| 拖拽动效 | 开 / 关 | 开（端点外拉 + 中段纵向弹性形变） |
+| 玻璃材质 | 开 / 关 | 开（液态玻璃：背景折射 + 上缘镜面 + 底缘厚度） |
 | 滑轨强调色 | 6 个预设 + 任意 hex | `#4A84FF` |
 | 最高档字符 | 跟随强调色 / 自定义 | 跟随强调色 |
 | 滑块形状 | 圆 / 环 / 方 / 胶囊 / 细棒 | 圆 |
@@ -97,6 +90,8 @@ dsh plugin --profile web add "github:xiaobaga281/dsh-effort-mosaic"
 
 整套配色由强调色派生（填充渐变、粒子、光晕同源），不会出现"轨道变了、粒子还是旧蓝"。设置留在 `localStorage` 的 `dsh-effort-mosaic:settings:v1`，面板底部可一键恢复默认。
 
+「拖拽动效」关掉后，滑块仍严格跟手、松手仍吸附档位，但端点外拉 / 中段上下拖不再让轨道和滑块拉伸；「玻璃材质」关掉后，轨道退成扁平底 + 1px 描边，不再有背景模糊、镜面和底部厚度。两项默认开启，旧存档升级后手感与外观不变。
+
 ### 两种轨道风格
 
 | 风格 | 轨道 | 最高档 | 粒子越界 |
@@ -108,7 +103,7 @@ dsh plugin --profile web add "github:xiaobaga281/dsh-effort-mosaic"
 
 霓虹最高档的渐变**跟着强调色走**：默认强调色下逐点等于原版采样值（`#2546D0 → #B37DFF → #724CE9`），换成红/绿主题后整条渐变按同一 RGB 偏移平移，得到同结构的红紫/绿紫渐变；滑块脚下的火星与底纹也跟着强调色变。
 
-两套风格在 CSS 层面完全隔离：所有 `.dem-codex*` 规则都挂 `[data-rail='codex']` 前缀，冒烟测试里有一条断言专门盯着这件事，防止以后串味。
+两套风格在 CSS 层面完全隔离：所有 `.dem-codex*` 规则都挂 `[data-rail='codex']` 前缀，防止以后串味。
 
 ## 实现要点
 
@@ -131,28 +126,21 @@ dsh plugin --profile web add "github:xiaobaga281/dsh-effort-mosaic"
 15. **粒子动画只能动 `transform`**：霓虹的 14 颗白点如果动画 `left`，每帧都要重排整棵子树（里面还压着带遮罩的填充），必掉帧；改成等宽空壳 + `translateX` 走合成层。这 14 颗与 18 颗火星的节点也必须在模块加载时建一次，不能每次渲染重建。白点 3px、火星 2.8–5.2px。
 16. **旋钮位置用 `left`，和填充 `width` 同一条布局路径**：旋钮若单独改成 `translate`（合成层），填充宽度还在主线程重排，两条渲染路径速度不一致，换档时就会看到色轨滞后。两者都走 `left` / `width` 和同一条 `.3s` 曲线；WAAPI 的 `scale` 脉冲仍走 `transform`。
 17. **霓虹的「点亮强度 / 速度」必须落到自己的 CSS 变量上**：只喂 `burstPower` 是不够的（那是马赛克粒子引擎），紫渐变的 filter 峰值和时长由 `--dem-neon-peak-* / --dem-neon-dur-*` 控制，点亮定时器也要按同一个时长收尾。
-18. **点击的第一帧必须同步写 DOM，宿主写入要延后**：`landByCss` 先把目标像素直接写到旋钮 `--dem-knob-x` 和填充 `width`，等 React 提交就晚了半拍。宿主的 `access.select` 是同步桥，实测一次写入会让渲染线程停 0.1–0.3s；所以档位落库延后 360ms，并在 `requestIdleCallback` 空闲时执行。连续点击会取消上一档的延迟窗口，只落最后一次；浮窗提前关闭则在卸载时补写。
+18. **点击的第一帧必须同步写 DOM，宿主写入要延后**：`landByCss` 先把目标像素直接写到旋钮 `--dem-knob-x` 和填充 `width`，等 React 提交就晚了半拍。宿主的 `access.select` 是同步桥，实测一次写入会让渲染线程停 0.1–0.3s；无感引擎把宿主写入排到「视觉落位 + 两帧 + `requestIdleCallback`」之后，字符在落位帧由 `paintEffortEverywhere` 乐观切换，MutationObserver 在等待回写期间守住文字，失败再由 draft 回滚。连续换档只保留最后一次目标；浮窗提前关闭则在卸载时补写。
 
-## 开发
-
-```sh
-npm test                   # 177 项离线断言（桩件里真跑 bundle）
-node tools/make-promo.mjs  # 重新生成 docs/ 下三张宣传图（真实 CSS 渲染）
-```
+## 运行时文件
 
 ```
 lib/client.js        全部实现（CJS closure bundle，无构建步骤）
 lib/index.js         宿主侧：零逻辑，只做产物审计
 cordis.patch.yml     host 图里插入这一行（`- insert: - id: effort-mosaic`）
 icon.svg             插件图标（详情页 / 列表）
-docs/*.png           README 宣传图
-tools/make-promo.mjs 宣传图生成器
-test/smoke.mjs       冒烟测试，不进 npm 包
+package.json         包元数据
 CHANGELOG.md         完整版本记录
 README.md / LICENSE  说明与许可
 ```
 
-`npm publish` 只带 `package.json` 的 `files` 白名单：`lib/`、`cordis.patch.yml`、`icon.svg`、`README.md`、`CHANGELOG.md`、`LICENSE`。测试、宣传图生成器和临时诊断文件都不进包。
+`npm publish` 只带 `package.json` 的 `files` 白名单：`lib/`、`cordis.patch.yml`、`icon.svg`、`README.md`、`CHANGELOG.md`、`LICENSE`。开发测试、宣传图生成器和诊断脚本不随插件发布。
 
 修改 `lib/client.js` 后必须重启 DSH 宿主：宿主在启动时按 bundle 计算 `rev`，只刷新页面会继续请求旧 `rev` 并返回 404，看起来像插件没有加载。
 
@@ -160,6 +148,7 @@ README.md / LICENSE  说明与许可
 
 完整记录见 [CHANGELOG.md](./CHANGELOG.md)。
 
+- **1.2.0** — 详情页预览接入真实三档轨道与「拖拽动效 / 玻璃材质」开关；无感档位引擎将字符切换提前到视觉落位帧；修复玻璃上缘过厚、旋钮浅色环、轨道底缘硬黑线；修复输入胶囊 Max 染色先蓝后灰再蓝；发布包只保留运行文件。
 - **1.1.9** — 补充 `screenshots.json` 与 `engines.dsh`，修复插件市场介绍页无截图、宿主要求显示未知。
 - **1.1.8** — 修复最高档滑块光晕熄灭太直接：进入保持快，退出改为 1.05s 呼吸式衰减；粒子和霓虹同时生效。
 - **1.1.7** — 修复霓虹最高档先露整条紫色、再播擦除的问题：落位后蓝盖板先满覆盖，点火时再从 0 向左退，只擦一次。

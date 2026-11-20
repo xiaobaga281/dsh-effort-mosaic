@@ -1,7 +1,0 @@
-node_modules/
-*.bak
-*.bak-*
-*.tgz
-*.log
-.DS_Store
-Thumbs.db
