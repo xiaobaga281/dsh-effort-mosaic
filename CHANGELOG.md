@@ -2,6 +2,36 @@
 
 按版本倒序。每条按「新增 / 修复 / 质量」归类；没有的分类省略。
 
+## 1.2.3 — 2026-11-21
+
+### 修复
+
+- **最高档粒子速度前快后慢**：最高档原来靠 `burstPowerRef` 给一次 2.6× 瞬时提速，随后 `tick()` 每帧把 `burstPower` 减 `0.05 × burstSpeed`，约 20 帧后归零，速度从 2.6× 掉回基础 1×。现在最高档的顶部提速是稳定值：`lv` 从 0.82 到 1 平滑抬到 2.6×（点亮强度越高抬得越多），`burstPower` 只保留 0.06× 的入口轻抬速，衰减完仍停在 2.6×，不会在 0.3 秒后突然变慢。`speedBase` 的每帧增量语义和「不做 dt 归一」保持不变。
+- **详情页自定义设置横向超出容器**：强调色 swatches（6 个圆形按钮 + 96px hex 输入）在窄容器里没有换行，240px 宽时 `scrollWidth` 比 `clientWidth` 多 20px，右缘被宿主 `.pageBody` 的 `overflow-x:hidden` 直接裁掉；分段控件、滑杆、预览标题 / 标签 / 底栏 / 底部按钮也有同类单行最小宽度。现在这些行都带 `flex-wrap` 与 `max-width:100%`，swatches 和 hex 允许换行、swatch 不再被压缩；静态探针从 360px 一路压到 160px，`panelScrollW === panelClientW`，没有横溢出的行或子元素。纵向高度没有在面板内加滚动层，继续交给宿主详情页的 `overflow-y:auto`（插槽锚点为 `display:contents`，面板是 `.detailSection` 的直接 flex 子项）。
+
+### 质量
+
+- `node --check lib/client.js` 通过。
+- 离线断言：顶部稳定速度 `0.10972 px/帧`（2.6× 基础值），入口轻抬 `1.06×`，模拟 20 帧 burst 衰减后仍回到 `0.10972`；`lv 0.8` 不进入顶部 ramp。
+- 真实 CSS + headless Edge 静态渲染：360 / 320 / 300 / 280 / 260 / 240 / 220 / 200 / 180 / 160px 十个宽度，面板 `scrollWidth === clientWidth`，无横向溢出的行或子元素。
+- 发布包仍只包含运行文件：`lib/`、`cordis.patch.yml`、`icon.svg`、`package.json`、`README.md`、`CHANGELOG.md`、`LICENSE`。
+
+## 1.2.2 — 2026-11-20
+
+### 修复
+
+- **切换模型后推理轨道偶尔空白**：`current.reasoningEffort` 可能还留着上一个模型的 id，旧逻辑直接拿它找下标会得到 `-1`，轨道进入未就绪状态。现在会先用当前模型的 `efforts` 校验，失效时回落到 `defaultEffort`；`default` / `auto` / `none` 只有不在当前档位表里时才当作“跟随默认”的占位值，真实声明的 `none` 档不再被误吞。
+- **模型切换后目录桥仍读旧 store**：`createAccess` 现在每次读取、订阅、选择都重新解析 `directoryFor`；目录包装对象换了、内部 store 换了、连接重置都会重新订阅，清空旧快照并主动通知 React。新目录加载不再沿用旧目录的 400ms 节流，避免刚打开菜单就切模型时新目录被跳过。
+- **轨道索引解析失败仍占 30px 空白**：只要当前模型确实声明了 `reasoning.efforts`，轨道就不会因为 `liveIndex` / 行文案暂时解析不出而完全隐藏；最后会先落在第一档，等快照或官方行文本回来再纠正。未就绪轨道高度收为 0，空容器 `display:none`，不再留下空白占位。
+- **官方行文本和档位对象格式兼容性**：行文本支持 `推理等级 Max`、`Effort: Default`、尾部箭头、大小写混用；不会把 `Maximum` 误判成 `Max`。`efforts` 支持 `{ id, name }`、`{ id, label }` 和字符串数组，`current.model` 兼容字符串与 `{ id }` 对象。
+- **模型换代时旧乐观状态串台**：切换模型会清掉上一代留下的 `draft`、待写档位和超时计时器，避免旧档位短暂盖在新模型轨道上，或把旧档位写进新模型；`teardownEntry` 也会摘掉官方行重建后遗留的空容器。
+- **切模型后非最高档字符被误染蓝**：最高档染色现在只作用于当前最高档那一段文字，不再给卡片里所有档位名统一上蓝；乐观染色索引会绑定模型 id，刚把模型 A 拉到最高档就切到模型 B 时，B 的首帧直接按自己的真实档位绘制，不会先沿用 A 的最高档索引。
+
+### 质量
+
+- `node --check lib/client.js` 通过；离线检查覆盖 `Default` 回落、旧模型档位失效、真实 `none` 档、字符串档位、provider 重挂、对象模型 id、菜单行标签/箭头解析、目录切换、加载节流和快照身份稳定性。
+- 发布包仍只包含运行文件：`lib/`、`cordis.patch.yml`、`icon.svg`、`package.json`、`README.md`、`CHANGELOG.md`、`LICENSE`。
+
 ## 1.2.1 — 2026-11-20
 
 ### 修复
