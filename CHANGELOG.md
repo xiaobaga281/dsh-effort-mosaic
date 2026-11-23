@@ -2,6 +2,19 @@
 
 按版本倒序。每条按「新增 / 修复 / 质量」归类；没有的分类省略。
 
+## 1.2.5 — 2026-11-23
+
+### 修复
+
+- **每次打开推理等级浮层，滑轨慢一帧**：轨道不是宿主菜单初始结构的一部分，旧桥接在 `MutationObserver` 里再等一次 `requestAnimationFrame` 才插容器，React portal 挂载后还要量宽、解锁 `data-ready`，所以面板先出、轨道后到。菜单打开的那批 mutation 现在直接同步执行 `scanOnce()`，不再等 rAF；目录快照晚到时也会因状态订阅补一次扫描；量宽从 `getBoundingClientRect()` 改为 `clientWidth`，菜单 scale 入场期间也能拿到最终布局宽度，不会被缩放后的 rect 量窄。
+- **最高档光带不跟随轨道形变**：`.dem-flush-clip` 原来只负责裁光带，没有接入 `.dem-fill` / `.dem-mosaic` 用的 `--dem-rail-sx / sy / skew`。最高档轨道被拉伸、斜切时，亮带仍停在未变换的矩形里。现在裁切壳复用同一组 transform 与 `transform-origin`，亮带随轨道一起变高、变斜。
+
+### 质量
+
+- `node --check lib/client.js`、`node --check lib/index.js` 通过。
+- 仓库恢复 `docs/hero.png`、`docs/neon.png`、`docs/shapes.png`、`docs/icon-180.png` 与根目录 `screenshots.json`；README 增加三张 raw GitHub 预览图，市场 nightly 构建可直接读取。
+- `npm pack --dry-run` 仍只带 8 个运行时文件，宣传图与 `screenshots.json` 留在仓库，不进入 npm 包。
+
 ## 1.2.4 — 2026-11-21
 
 ### 修复
