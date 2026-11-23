@@ -21,6 +21,14 @@
 
 档位表不写死：跟随当前模型在 `reasoning.efforts` 里声明的档位；模型没声明就不接管这一行（fail-open）。最高档时，输入框胶囊里的档位名会染成品牌蓝。
 
+## 预览
+
+![马赛克粒子轨道](https://raw.githubusercontent.com/xiaobaga281/dsh-effort-mosaic/main/docs/hero.png)
+
+![霓虹轨道](https://raw.githubusercontent.com/xiaobaga281/dsh-effort-mosaic/main/docs/neon.png)
+
+![五种滑块](https://raw.githubusercontent.com/xiaobaga281/dsh-effort-mosaic/main/docs/shapes.png)
+
 ## 安装
 
 ```sh
