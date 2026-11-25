@@ -40,6 +40,7 @@
 - 真实 DSH 设置面板 `disc` + `codex`：点击最高档后把旋钮过渡人为拉到 5s，在滑块还在中途时抓帧，目标 Max 处只剩刻度竖条，没有再挖出 30px 的灰色圆形空洞；圆形挖孔已改由 fill 自身 `100%` 右缘计算，不再依赖轨道 `--dem-knob-x`。
 - 真实 DSH 圆形档从最低档快速点到最高档：20ms 抓帧 `fillWidth=96.4479px`、`knobLeft=96.4493px`，100ms 两边都是 `259px`；mask 始终为 `radial-gradient(15px at 100% 50%, …)`，左端 / 中段没有黑色圆洞。
 - 真实 DSH 菜单 `disc` + `codex` 在 Max 右端继续右拖再松手：遮孔圆心跟随 fill 右缘，左端保持紫色填充；松手后进入吸附态也没有回落到默认 15px。
+- 真实 DSH 横向拖到 Max 端点时：`knobSy=0.8600`、`railSy=0.9500`、`fillSy=0.8600`（取两者较小值），fill / knob 的 `getBoundingClientRect().height` 同为 `25.799968px`；松手后 `fillSy=0.9999`，两者同为 `29.996990px`，确认色带不再高于滑块，滑块上下没有蓝边。
 - 拖动形变松手采样（`ω=18 / ζ=0.55`）：0ms `knob-sx=1.2007`，50ms `1.0627`，100ms `0.9974`，160ms `0.9829`（轻微过冲），320ms 回到 `1.0000`；回缩不再是第一帧一把收平。
 - 宣传图改为四张 1200×630 HUD 构图，并全部从最终 CSS 重新渲染：`docs/hero-hud.png`、`docs/drag-hud.png`、`docs/neon-hud.png`、`docs/shapes-hud.png`；旧的 `docs/hero.png` / `docs/drag.png` / `docs/neon.png` / `docs/shapes.png` 已从仓库移除，避免 GitHub raw 缓存继续返回旧图。
 - 保留 1.2.7 已验证的形状修复：默认超椭圆、`disc` 真圆、圆形径向遮罩、细棒接缝与最高档不越界，均未回退。
