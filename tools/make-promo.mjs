@@ -128,7 +128,7 @@ function track(opts) {
   const radius = I.knobRadiusOf({ knobShape: o.shape, knobSize: o.size });
   const border = "1px solid " + pal.stops[0];
   const fillSurface = I.knobSurfaceOf({ knobShape: o.shape, knobFill: o.knobFill || "white" }, pal);
-  const corner = o.shape === "circle" ? Math.round(o.size * 0.18)
+  const corner = o.shape === "circle" ? Math.round(o.size * 0.34)
     : o.shape === "rounded" ? Math.round(o.size * 0.06) : null;
   const tailRadius = corner === null ? Math.min(knobW, o.size) / 2 : corner;
   const travel = o.width - knobW + 2;
@@ -190,7 +190,7 @@ function neonTrack(opts) {
   const travel = Math.max(0, o.width - knobW);
   const cx = knobW / 2 + travel * o.pct;
   const fillW = cx + knobW / 2;
-  const tailRadius = Math.round(o.size * 0.18);
+  const tailRadius = Math.round(o.size * 0.34);
   const max = o.pct >= 1 ? "1" : "0";
   const dragAttr = o.deform ? ' data-dragging="1" data-measured="1"' : '';
   const vars = [
