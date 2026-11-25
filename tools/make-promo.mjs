@@ -126,13 +126,19 @@ function track(opts) {
   const o = Object.assign({ width: 860, pct: 1, shape: "circle", size: 30, scatter: false, knobs: true }, opts);
   const knobW = I.knobWidthOf({ knobShape: o.shape, knobSize: o.size });
   const radius = I.knobRadiusOf({ knobShape: o.shape, knobSize: o.size });
-  const border = o.shape === "ring"
-    ? "3px solid " + pal.accent
-    : "1px solid " + pal.stops[0];
+  const border = "1px solid " + pal.stops[0];
   const fillSurface = I.knobSurfaceOf({ knobShape: o.shape, knobFill: o.knobFill || "white" }, pal);
+  const corner = o.shape === "circle" ? Math.round(o.size * 0.18)
+    : o.shape === "rounded" ? Math.round(o.size * 0.06) : null;
+  const tailRadius = corner === null ? Math.min(knobW, o.size) / 2 : corner;
   const travel = o.width - knobW + 2;
   const cx = knobW / 2 - 1 + travel * o.pct;
   const fillW = cx + knobW / 2;
+  /* 和真机 syncTail 同一条收口：细棒贴左缘并向滑块内让 1px；其余实心形状
+     切在圆心左侧 8px，让切口藏在旋钮本体下面。 */
+  const cutX = o.shape === "blade" ? Math.max(0, cx - knobW / 2 + 1)
+    : Math.max(0, cx - 8);
+  const tailInset = o.shape === "blade" ? knobW - 1 : knobW / 2 + 8;
   const dragAttr = o.deform ? ' data-dragging="1" data-measured="1"' : '';
   const burstAttr = o.burst ? ' data-burst="1" data-burst-style="scan"' : '';
   const vars = [
@@ -148,13 +154,14 @@ function track(opts) {
     "--dem-knob-fill:" + fillSurface,
     "--dem-fill-h:30px",
     "--dem-band-inset:0px",
-    "--dem-fill-tail-radius:" + (knobW / 2 - I.knobBorderWidthOf({ knobShape: o.shape })) + "px",
-    "--dem-fill-tail-x:" + cx.toFixed(2) + "px",
+    "--dem-fill-tail-radius:" + tailRadius + "px",
+    "--dem-fill-tail-x:" + cutX.toFixed(2) + "px",
+    "--dem-knob-tail-inset:" + tailInset.toFixed(2) + "px",
     "--dem-slot-bg:rgba(255,255,255,.10)",
     "--dem-rail-origin-x:" + fillW.toFixed(2) + "px",
     "--dem-rail-base-origin:" + fillW.toFixed(2) + "px",
   ].concat(deformVars(o, fillW)).join(";");
-  return '<div class="stage-vars" style="' + vars + '"><div class="dem-track"' + dragAttr + burstAttr + ' style="width:' + o.width + 'px">'
+  return '<div class="stage-vars" style="' + vars + '"><div class="dem-track" data-knob-shape="' + o.shape + '"' + dragAttr + burstAttr + ' style="width:' + o.width + 'px">'
     + '<div class="dem-fill" style="width:' + fillW.toFixed(2) + 'px"></div>'
     + '<div class="dem-mosaic-clip"><div class="dem-mosaic" style="width:' + fillW.toFixed(2) + 'px">'
     + cellsHtml(fillW, { scatter: o.scatter })
@@ -183,6 +190,7 @@ function neonTrack(opts) {
   const travel = Math.max(0, o.width - knobW);
   const cx = knobW / 2 + travel * o.pct;
   const fillW = cx + knobW / 2;
+  const tailRadius = Math.round(o.size * 0.18);
   const max = o.pct >= 1 ? "1" : "0";
   const dragAttr = o.deform ? ' data-dragging="1" data-measured="1"' : '';
   const vars = [
@@ -199,13 +207,14 @@ function neonTrack(opts) {
     "--dem-fill-h:30px",
     "--dem-band-inset:0px",
     "--dem-fill-tail-x:" + cx.toFixed(2) + "px",
-    "--dem-fill-tail-radius:" + (knobW / 2 - 1) + "px",
+    "--dem-fill-tail-radius:" + tailRadius + "px",
+    "--dem-knob-tail-inset:" + (knobW / 2 + 8) + "px",
     "--dem-slot-bg:rgba(255,255,255,.10)",
     "--dem-rail-origin-x:" + fillW.toFixed(2) + "px",
     "--dem-rail-base-origin:" + fillW.toFixed(2) + "px",
   ].concat(deformVars(o, fillW)).join(";");
   return '<div class="stage-vars" style="' + vars + '">'
-    + '<div class="dem-track" data-rail="codex" data-max="' + max
+    + '<div class="dem-track" data-rail="codex" data-knob-shape="circle" data-max="' + max
     + '" data-measured="1" data-burst="0" data-burst-style="scan"' + dragAttr + ' style="width:' + o.width + 'px">'
     + '<div class="dem-fill" style="width:' + fillW.toFixed(2) + 'px">'
     + '<div class="dem-codex"><div class="dem-codex-grad"></div><div class="dem-codex-glow"></div>'
@@ -442,9 +451,9 @@ h1 em{font-style:normal;color:#7ea7ff}
 
 /* ────────────────────────────── 五种滑块 ────────────────────────────── */
 const shapeDefs = [
-  ["circle", "圆", 30],
-  ["ring", "环", 30],
-  ["rounded", "方形", 30],
+  ["circle", "默认", 30],
+  ["disc", "圆形", 30],
+  ["rounded", "方", 30],
   ["pill", "胶囊", 30],
   ["blade", "细棒", 30],
 ];
