@@ -25,6 +25,8 @@
 
 ![马赛克粒子轨道](https://raw.githubusercontent.com/xiaobaga281/dsh-effort-mosaic/main/docs/hero.png)
 
+![Q 弹拖拽形变](https://raw.githubusercontent.com/xiaobaga281/dsh-effort-mosaic/main/docs/drag.png)
+
 ![霓虹轨道](https://raw.githubusercontent.com/xiaobaga281/dsh-effort-mosaic/main/docs/neon.png)
 
 ![五种滑块](https://raw.githubusercontent.com/xiaobaga281/dsh-effort-mosaic/main/docs/shapes.png)
@@ -55,7 +57,7 @@ dsh plugin --profile web add "github:xiaobaga281/dsh-effort-mosaic"
 |---|---|
 | 按住拖动 | 两档之间完全自由跟手（平面距离超过 5px 才算拖动，之前滑块一像素不动）；横向中段轨道不形变，纵向上下拖可拉高/压扁 |
 | 拖过端点 | 滑块到 0 / 最高档后继续外拉，轨道玻璃、色带、粒子与滑块一起弹性拉伸；锚点贴在滑块这一侧，轨道不会越过滑块外沿 |
-| 纵向拖动 | 以按下点为基准上下拉，纵向位移超过约 2px 且以纵向为主时生效，中段也响应；形变和粒子统一裁在宿主浮层内 |
+| 纵向拖动 | 以按下点为基准上下拉，纵向位移超过 8px 且明显大于横向位移时生效，中段也响应；形变和粒子统一裁在宿主浮层内 |
 | 松手 | 吸附到最近档位，约 0.25s；松手位置正好在档位上时不动，不再向右补一段 |
 | 点击轨道 | 判定离指针最近的档位；pointerup 同帧把目标像素写到旋钮和填充，滑块立即起 `.3s` CSS 过渡，不等待 React 提交 |
 | `←` `→` `↑` `↓` / `Home` `End` | 相邻档位 / 首尾档，同样走 `.3s` CSS 过渡 |
@@ -65,7 +67,7 @@ dsh plugin --profile web add "github:xiaobaga281/dsh-effort-mosaic"
 
 ## 视觉
 
-一条 30px 高的胶囊凹槽，自下而上叠四层：填充渐变 → 6 行 × 5px 粒子 → 刻度 → 滑块。填充、粒子、凹槽共用同一条轮廓：右端按滑块内缘收口，带高跟随滑块（`min(30, 滑块高)`），接缝处不会露出蓝边。拖动形变时色带和滑块共用同一条右端收口线，`scale / skew` 也不会让色轨从旋钮右上、右下探出来。
+一条 30px 高的胶囊凹槽，自下而上叠四层：填充渐变 → 6 行 × 5px 粒子 → 刻度 → 滑块。填充、粒子、凹槽共用同一条轮廓：右端按滑块内缘收口，带高跟随滑块（`min(30, 滑块高)`），接缝处不会露出蓝边。拖动形变时色带和滑块共用同一条右端收口线；滑块只做轴向缩放，圆头半径会按形变后的短边反算回本地坐标，拉伸后圆头仍是圆头，不会变成斜片或椭圆；轨道只保留很轻的 `skewX` 做方向感。`scale / skew` 也不会让色轨从旋钮右上、右下探出来。
 
 粒子按离滑块的距离决定散开程度：右侧 2% 是严格贴网格的墙，往左 `amp` 增大、漂移与抖动随之变大，最左端几乎全部脱离。颜色取自同一条渐变色阶 × 明度系数（0.80–1.06），砖缝从浅蓝到纯蓝都看得清。
 
@@ -135,12 +137,13 @@ dsh plugin --profile web add "github:xiaobaga281/dsh-effort-mosaic"
 16. **旋钮位置用 `left`，和填充 `width` 同一条布局路径**：旋钮若单独改成 `translate`（合成层），填充宽度还在主线程重排，两条渲染路径速度不一致，换档时就会看到色轨滞后。两者都走 `left` / `width` 和同一条 `.3s` 曲线；WAAPI 的 `scale` 脉冲仍走 `transform`。
 17. **霓虹的「点亮强度 / 速度」必须落到自己的 CSS 变量上**：只喂 `burstPower` 是不够的（那是马赛克粒子引擎），紫渐变的 filter 峰值和时长由 `--dem-neon-peak-* / --dem-neon-dur-*` 控制，点亮定时器也要按同一个时长收尾。
 18. **点击的第一帧必须同步写 DOM，宿主写入要延后**：`landByCss` 先把目标像素直接写到旋钮 `--dem-knob-x` 和填充 `width`，等 React 提交就晚了半拍。宿主的 `access.select` 是同步桥，实测一次写入会让渲染线程停 0.1–0.3s；无感引擎把宿主写入排到「视觉落位 + 两帧 + `requestIdleCallback`」之后，字符在落位帧由 `paintEffortEverywhere` 乐观切换，MutationObserver 在等待回写期间守住文字，失败再由 draft 回滚。连续换档只保留最后一次目标；浮窗提前关闭则在卸载时补写。
+19. **菜单桥是全局单例，动画墙离开视口就停**：`MutationObserver` + 一个全局 350ms 自愈定时器覆盖所有 composer，最后一个会话卸载时一起停掉，不再每个会话各开一个 interval；粒子墙用 `IntersectionObserver` 暂停不可见轨道的 rAF，回到视口再续上一帧；滑块几何每帧只读一次并缓存 4ms，重复的 `width / clip-path / transform` 写入先比对再落 DOM。
 
 ## 运行时文件
 
 ```
 lib/client.js        全部实现（CJS closure bundle，无构建步骤）
-lib/index.js         宿主侧：零逻辑，只做产物审计
+lib/index.js         宿主侧：空逻辑，只让 Loader 扫到这个包
 cordis.patch.yml     host 图里插入这一行（`- insert: - id: effort-mosaic`）
 icon.svg             插件图标（详情页 / 列表）
 package.json         包元数据
@@ -156,6 +159,8 @@ README.md / LICENSE  说明与许可
 
 完整记录见 [CHANGELOG.md](./CHANGELOG.md)。
 
+- **1.2.6** — 修复滑块拖拽时被斜切成“左低右高”、圆头在非等比缩放下变椭圆、横向滑到端点时误触发纵向拉伸，以及松手回弹偏慢；同时清掉旧包名配置双注册、`TRACK_INSET`、旧 `codexDustNodes` 包装、`tintQueued` 死变量和宿主侧启动审计，测试接缝只保留宣传图生成器实际使用的函数；菜单桥改为全局单例，不可见轨道暂停 rAF，滑块几何与 DOM 样式写入加缓存。
+- **1.2.5** — 修复每次打开推理等级浮层滑轨慢一帧，以及最高档光带不跟随轨道形变；恢复市场宣传图与 README 预览资产。
 - **1.2.4** — 修复最高档轨道 / 滑块光晕退场太直接：光晕改为 2.2s 扩散衰减，上缘发丝光保留；修复首次打开浮窗粒子越界晚一拍，以及开启粒子扩散后重开面板延迟：建墙回到 `useLayout` 并用 `DocumentFragment` 一次插入，冷启动直接满散，裁切高度按实际散开幅度动态计算。
 - **1.2.3** — 修复最高档粒子速度前快后慢：`burstPower` 不再把速度从 2.6× 衰减回 1×，最高档改用稳定的顶部提速，只在入口叠加 0.06× 轻抬；修复详情页自定义设置在窄窗口下强调色 swatches / hex、分段控件、滑杆、预览标签与底栏横向溢出，面板在 160–360px 宽度内均无横向溢出。
 - **1.2.2** — 修复切换模型后推理滑轨偶尔空白：旧 `reasoningEffort` 先用新模型的档位表校验，失效时回落 `defaultEffort`；目录换代时重新解析并订阅新 store，新目录不再被旧加载节流跳过；只要模型声明了档位，轨道就有兜底落点，不再留下 30px 空占位。另修复拉到最高档后立即切模型、新模型非最高档字符被旧最高档索引误染蓝的问题。
